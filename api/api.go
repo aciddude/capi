@@ -82,62 +82,111 @@ var coinClientConfig = &rpcclient.ConnConfig {
 
 
 //GetBlockObject
-func GetBlockObject(w http.ResponseWriter, r *http.Request)  {
+func GetBlock(w http.ResponseWriter, r *http.Request)  {
 
 
 		urlBlock := r.URL.Path
-		urlBlock = strings.TrimPrefix(urlBlock, "/blk/")
-		log.Println("Parsed Block Object from the URL", urlBlock)
+		if len(urlBlock) > 60{
 
-		blockHeight, err := strconv.ParseInt(urlBlock, 10, 64)
-		if err != nil {
-			log.Println("ERROR: invalid block height specified" + " -- Go Error:" ,err)
-			http.Error(w, "ERROR: invalid block height specified \n"+"Please chose a number like '0' for the genesis block or '444' for block 444", 404)
-			return
+			urlBlock = strings.TrimPrefix(urlBlock, "/block/")
+
+			log.Println("Block Hash", urlBlock)
+
+			hash, err := chainhash.NewHashFromStr(urlBlock)
+			if err != nil {
+				log.Print("Error with hash")
+			}
+
+			log.Println("Trying to get block hash: ", urlBlock)
+			block, err := coinClient.GetBlockVerbose(hash)
+			if err != nil {
+				log.Print("Error with hash requested: ", urlBlock)
+				http.Error(w, "ERROR: invalid block hash requested \n"+
+					"Please use a block hash, eg: 4b6c3362e2f2a6b6317c85ecaa0f5415167e2bb333d2bf3d3699d73df613b91f", 500)
+				return
+			}
+			blockArray := make([]Block, 1);
+			index := 0;
+			blockArray[index] = Block {
+				Height:  block.Height,
+				Hash: block.Hash,
+				Bits: block.Bits,
+				BlockTransactions: block.Tx,
+				Confirmations: block.Confirmations,
+				Difficulty: block.Difficulty,
+				Nonce: block.Nonce,
+				Time: block.Time,
+				MerkleRoot: block.MerkleRoot,
+				PreviousHash: block.PreviousHash,
+				NextHash: block.NextHash,
+				Size: block.Size,
+				VersionHex: block.VersionHex,
+				StrippedSize: block.StrippedSize,
+				Weight: block.Weight,
+				Version: block.Version,
+
+			};
+
+			log.Println(blockArray)
+
+			jsonBlock, err := json.Marshal(&blockArray)
+			data := json.RawMessage(jsonBlock)
+			json.NewEncoder(w).Encode(data)
+
+
+		} else {
+			urlBlock = strings.TrimPrefix(urlBlock, "/block/")
+			log.Println("Parsed Block Object from the URL", urlBlock)
+
+			blockHeight, err := strconv.ParseInt(urlBlock, 10, 64)
+			if err != nil {
+				log.Println("ERROR: invalid block height specified" + " -- Go Error:" ,err)
+				http.Error(w, "ERROR: invalid block height specified \n"+"Please chose a number like '0' for the genesis block or '444' for block 444", 404)
+				return
+			}
+
+			log.Println("Block converted to int64", blockHeight)
+			blockHash, err := coinClient.GetBlockHash(blockHeight)
+			if err != nil {
+				log.Println(err)
+				http.Error(w, "ERROR Getting Block Hash from Height: \n"+err.Error(), 500)
+
+			}
+
+			block, err := coinClient.GetBlockVerbose(blockHash)
+			if err != nil {
+				log.Println(err)
+				http.Error(w, "ERROR Getting Block from Block Hash:  "+err.Error(), 500)
+			}
+
+			blockArray := make([]Block, 1);
+			index := 0;
+			blockArray[index] = Block {
+				Height:  block.Height,
+				Hash: block.Hash,
+				Bits: block.Bits,
+				BlockTransactions: block.Tx,
+				Confirmations: block.Confirmations,
+				Difficulty: block.Difficulty,
+				Nonce: block.Nonce,
+				Time: block.Time,
+				MerkleRoot: block.MerkleRoot,
+				PreviousHash: block.PreviousHash,
+				NextHash: block.NextHash,
+				Size: block.Size,
+				VersionHex: block.VersionHex,
+				StrippedSize: block.StrippedSize,
+				Weight: block.Weight,
+				Version: block.Version,
+
+			};
+
+			log.Println(blockArray)
+
+			jsonBlock, err := json.Marshal(&blockArray)
+			data := json.RawMessage(jsonBlock)
+			json.NewEncoder(w).Encode(data)
 		}
-
-		log.Println("Block converted to int64", blockHeight)
-		blockHash, err := coinClient.GetBlockHash(blockHeight)
-		if err != nil {
-			log.Println(err)
-			http.Error(w, "ERROR Getting Block Hash from Height: \n"+err.Error(), 500)
-
-		}
-
-		block, err := coinClient.GetBlockVerbose(blockHash)
-		if err != nil {
-			log.Println(err)
-			http.Error(w, "ERROR Getting Block from Block Hash:  "+err.Error(), 500)
-		}
-
-		blockArray := make([]Block, 1);
-		index := 0;
-		blockArray[index] = Block {
-			Height:  block.Height,
-			Hash: block.Hash,
-			Bits: block.Bits,
-			BlockTransactions: block.Tx,
-			Confirmations: block.Confirmations,
-			Difficulty: block.Difficulty,
-			Nonce: block.Nonce,
-			Time: block.Time,
-			MerkleRoot: block.MerkleRoot,
-			PreviousHash: block.PreviousHash,
-			NextHash: block.NextHash,
-			Size: block.Size,
-			VersionHex: block.VersionHex,
-			StrippedSize: block.StrippedSize,
-			Weight: block.Weight,
-			Version: block.Version,
-
-		};
-
-		log.Println(blockArray)
-
-		jsonInfo, err := json.Marshal(&blockArray)
-		t := json.RawMessage(jsonInfo)
-		json.NewEncoder(w).Encode(t)
-
 }
 
 
@@ -165,66 +214,6 @@ func GetTX(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(txhash)
-
-}
-
-////////GetBlockByHashorHeight
-func GetBlock(w http.ResponseWriter, r *http.Request)  {
-
-
-	urlBlock := r.URL.Path
-	if len(urlBlock) > 60 {
-
-		urlBlock = strings.TrimPrefix(urlBlock, "/block/")
-
-		log.Println("Block Hash", urlBlock)
-
-		hash, err := chainhash.NewHashFromStr(urlBlock)
-		if err != nil {
-			log.Print("Error with hash")
-		}
-
-		log.Println("Trying to Get Block Hash: ", urlBlock)
-		block, err := coinClient.GetBlockVerbose(hash)
-		if err != nil {
-			log.Print("Error with hash")
-			http.Error(w, "ERROR: invalid block height specified \n"+
-				"Please chose a number like '0' for the genesis block or '444' for block 444", 500)
-		}
-
-		json.NewEncoder(w).Encode(block)
-		return
-	} else {
-
-		urlBlock = strings.TrimPrefix(urlBlock, "/block/")
-
-		log.Println("Parsed Block from the URL", urlBlock)
-
-		blockHeight, err := strconv.ParseInt(urlBlock, 10, 64)
-		if err != nil {
-			log.Println("ERROR: invalid block height specified" + " Go Error:" ,err)
-			http.Error(w, "ERROR: invalid block height specified \n"+"Please chose a number like '0' for the genesis block or '444' for block 444", 404)
-			return
-		}
-
-
-		log.Println("Block converted to int64", blockHeight)
-		blockHash, err := coinClient.GetBlockHash(blockHeight)
-		if err != nil {
-			log.Println(err)
-			http.Error(w, "ERROR Getting Block Hash from Height: \n"+err.Error(), 500)
-			return
-		}
-
-		block, err := coinClient.GetBlockVerbose(blockHash)
-		if err != nil {
-			log.Println(err)
-			http.Error(w, "ERROR Getting Block from Block Hash:  "+err.Error(), 500)
-			return
-		}
-
-		json.NewEncoder(w).Encode(block)
-	}
 
 }
 
