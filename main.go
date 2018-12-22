@@ -26,6 +26,4 @@ func main() {
 	router.HandleFunc("/market", GetCoinCodexData).Methods("GET")
 	log.Println("capi v0.1 is running!")
 	log.Fatal(http.ListenAndServe(":8000", router))
-
-
 }
