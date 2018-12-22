@@ -1,7 +1,11 @@
 {
-  "Host"        : "nomp.pools.ac:19337",
-  "User"        : "admin",
-  "Password"    : "123456",
-  "HTTPPostMode": true,
-  "DisableTLS"  : true
+  "Coin"        :         "Feathercoin",
+  "Ticker"      :         "FTC",
+  "Daemon"      :         "nomp.pools.ac:19337",
+  "RPCUser"     :         "admin",
+  "RPCPassword" :         "123456",
+  "HTTPPostMode":         true,
+  "DisableTLS"  :         true,
+  "EnableCoinCodexAPI" :  true
 }
+

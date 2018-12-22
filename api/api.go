@@ -9,15 +9,20 @@ import (
 	"strconv"
 	"os"
 	"github.com/btcsuite/btcd/rpcclient"
+	"time"
+	"io/ioutil"
 )
 
 
 type Config struct {
-	Host			string
-	User			string
-	Password	 	string
-	HTTPPostMode	bool
-	DisableTLS		bool
+	Coin				string	`json:"Coin"`
+	Ticker				string	`json:"Ticker"`
+	Daemon				string	`json:"Daemon"`
+	RPCUser				string	`json:"RPCUser"`
+	RPCPassword	 		string	`json:"RPCPassword"`
+	HTTPPostMode		bool
+	DisableTLS			bool
+	EnableCoinCodexAPI 	bool	`json:"EnableCoinCodexAPI"`
 }
 
 
@@ -73,9 +78,9 @@ var coinClient, _ = rpcclient.New(coinClientConfig, nil)
 
 // coin client config for coinClient, loads values from configFile
 var coinClientConfig = &rpcclient.ConnConfig {
-	Host: 			configFile.Host,
-	User: 			configFile.User,
-	Pass: 			configFile.Password,
+	Host: 			configFile.Daemon,
+	User: 			configFile.RPCUser,
+	Pass: 			configFile.RPCPassword,
 	HTTPPostMode:	configFile.HTTPPostMode,
 	DisableTLS:		configFile.DisableTLS,
 }
@@ -217,4 +222,56 @@ func GetTX(w http.ResponseWriter, r *http.Request) {
 
 }
 
+
+
+/// CoinCodex.com API for prices
+
+type coincodexapi struct {
+	Symbol 					string	`json:"symbol"`
+	CoinName 				string  `json:"coin_name"`
+	Price_TodayOpenUSD		float64	`json:"today_open"`
+	Price_HighUSD			float64	`json:"price_high_24_usd"`
+	Price_LowUSD			float64	`json:"price_low_24_usd"`
+	Volume24USD				float64	`json:"volume_24_usd"`
+	DataProvider			string	`json:"data_provider"`
+}
+
+func GetCoinCodexData(w http.ResponseWriter, r *http.Request) {
+	if configFile.EnableCoinCodexAPI == false {
+		return
+	} else {
+
+		url := "https://coincodex.com/api/coincodex/get_coin/"+configFile.Ticker
+
+		client := http.Client{
+			Timeout:time.Second * 5, // 5 second timeout
+		}
+
+		request, err := http.NewRequest(http.MethodGet, url, nil)
+		if err != nil {
+			log.Println("ERROR: ", err)
+		}
+		request.Header.Set("User-Agent", "capi v0.1")
+
+		response, getError := client.Do(request)
+		if getError != nil {
+			log.Println("ERROR: ", getError)
+
+		}
+		body, readError := ioutil.ReadAll(response.Body)
+		if readError != nil {
+			log.Println("ERROR:", readError)
+		}
+
+		jsonData := coincodexapi{
+			DataProvider:"CoinCodex.com",
+		}
+		jsonError := json.Unmarshal(body, &jsonData)
+		if jsonError != nil {
+			log.Println("ERROR: ", jsonError)
+		}
+
+		json.NewEncoder(w).Encode(jsonData)
+	}
+}
 
