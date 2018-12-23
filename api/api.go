@@ -11,6 +11,7 @@ import (
 	"github.com/btcsuite/btcd/rpcclient"
 	"time"
 	"io/ioutil"
+	"html/template"
 )
 
 
@@ -23,6 +24,7 @@ type Config struct {
 	HTTPPostMode		bool
 	DisableTLS			bool
 	EnableCoinCodexAPI 	bool	`json:"EnableCoinCodexAPI"`
+	CapiPort			string	`json:"capi_port"`
 }
 
 
@@ -51,7 +53,7 @@ var Blocks []Block
 
 /// Function to Load Config file from disk as type Config struct
 
-func loadConfig(file string) (Config) {
+func LoadConfig(file string) (Config) {
 	// get the local config from disk
 	//filename is the path to the json config file
 
@@ -71,7 +73,7 @@ func loadConfig(file string) (Config) {
 }
 
 // config file from disk using loadConfig function
-var configFile  = loadConfig("./config/config.json")
+var configFile  = LoadConfig("./config/config.json")
 
 // coin client using coinClientConfig
 var coinClient, _ = rpcclient.New(coinClientConfig, nil)
@@ -289,4 +291,47 @@ func GetCoinCodexData(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(jsonData)
 	}
 }
+
+
+func IndexRoute (w http.ResponseWriter, r *http.Request) {
+
+	tmpl, err := template.ParseFiles("templates/index.tmpl")
+		if err != nil {
+			log.Println("ERROR: Parsing template file index.tmpl", err)
+		}
+
+
+	url := "https://coincodex.com/api/coincodex/get_coin/"+configFile.Ticker
+
+	client := http.Client{
+		Timeout:time.Second * 5, // 5 second timeout
+	}
+
+	request, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		log.Println("ERROR: ", err)
+	}
+	request.Header.Set("User-Agent", "capi v0.1")
+
+	response, getError := client.Do(request)
+	if getError != nil {
+		log.Println("ERROR: ", getError)
+
+	}
+	body, readError := ioutil.ReadAll(response.Body)
+	if readError != nil {
+		log.Println("ERROR:", readError)
+	}
+
+	jsonData := coincodexapi{
+		DataProvider:"CoinCodex.com",
+	}
+	jsonError := json.Unmarshal(body, &jsonData)
+	if jsonError != nil {
+		log.Println("ERROR: ", jsonError)
+	}
+
+	tmpl.Execute(w, jsonData)
+}
+
 

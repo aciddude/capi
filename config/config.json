@@ -6,6 +6,7 @@
   "RPCPassword" :         "123456",
   "HTTPPostMode":         true,
   "DisableTLS"  :         true,
-  "EnableCoinCodexAPI" :  true
+  "EnableCoinCodexAPI" :  true,
+  "capi_port"          :  ":8000"
 }
 

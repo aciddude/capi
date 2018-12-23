@@ -9,6 +9,7 @@ import (
 )
 
 
+var configFile  = api.LoadConfig("./config/config.json")
 
 func main() {
 
@@ -17,6 +18,7 @@ func main() {
 	router.HandleFunc("/tx/{tx}", api.GetTX).Methods("GET")
 	router.HandleFunc("/market", api.GetCoinCodexData).Methods("GET")
 	router.HandleFunc("/blockchaininfo", api.GetBlockchainInfo).Methods("GET")
+	router.HandleFunc("/", api.IndexRoute).Methods("GET")
 	log.Println("capi v0.1 is running!")
-	log.Fatal(http.ListenAndServe(":8000", router))
+	log.Fatal(http.ListenAndServe(configFile.CapiPort, router))
 }
