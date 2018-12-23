@@ -243,6 +243,7 @@ func GetBlockchainInfo(w http.ResponseWriter, r *http.Request) {
 type coincodexapi struct {
 	Symbol 					string	`json:"symbol"`
 	CoinName 				string  `json:"coin_name"`
+	LastPrice				float64	`json:"last_price_usd"`
 	Price_TodayOpenUSD		float64	`json:"today_open"`
 	Price_HighUSD			float64	`json:"price_high_24_usd"`
 	Price_LowUSD			float64	`json:"price_low_24_usd"`
