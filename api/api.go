@@ -222,6 +222,20 @@ func GetTX(w http.ResponseWriter, r *http.Request) {
 
 }
 
+//GetBlockchainInfo
+func GetBlockchainInfo(w http.ResponseWriter, r *http.Request) {
+
+	getblockchaininfo, err := coinClient.GetBlockChainInfo()
+	if err != nil {
+		log.Println("ERROR: ", err)
+		http.Error(w, "ERROR: \n"+ err.Error(), 500)
+		return
+	}
+
+	json.NewEncoder(w).Encode(getblockchaininfo)
+
+}
+
 
 
 /// CoinCodex.com API for prices
