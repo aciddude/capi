@@ -1,7 +1,15 @@
 Capi v0.1
 =============
 
-Important!  Your coin.conf file needs to have `txindex=1`
+
+*The Goal*
+> Build an easy to use, coin agnostic API with a built in Block Explorer
+
+Forks and PRs Welcome -  I'm teaching myself Go! :-) 
+
+************
+
+__Important!__ Your coin.conf file needs to have `txindex=1`
 
 capi will look for a config file in ./config/config.json
 
