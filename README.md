@@ -19,7 +19,8 @@ If you have the capi binary in ~/home/Username/capiv1.0/capi
   "RPCPassword" :         "123456",
   "HTTPPostMode":         true,
   "DisableTLS"  :         true,
-  "EnableCoinCodexAPI" :  true
+  "EnableCoinCodexAPI" :  true,
+  "capi_port"          :  ":8000"
 }
 
 ```
@@ -32,9 +33,8 @@ RPCPassword = Coin daemon RPC Password as a string
 HTTPPostMode = Enable HTTP only posts to coin daemon, bool true or false
 DisableTLS = DisableTLS connection to coin daemon, bool true or false
 EnableCoinCodexAPI = Enable or Disable the CoinCodexApi data which is used for prices, bool true or false
+capi_port = The port capi will listen on, string of ":PORT" . eg :8000 for capi to listen on port 8000
 ```
-
-capi listens on port 8000 on localhost
 
 Once capi is running you can hit the following api endpoints:
 
