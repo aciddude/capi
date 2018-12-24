@@ -28,26 +28,6 @@ type Config struct {
 }
 
 
-// Block struct
-type Block struct {
-	Hash              string   `json:"hash"`
-	Confirmations     int64    `json:"confirmations"`
-	Size              int32    `json:"size"`
-	StrippedSize  	  int32	   `json:"strippedSize"`
-	Weight      	  int32	   `json:"weight"`
-	Height            int64    `json:"height"`
-	Version           int32	   `json:"version"`
-	VersionHex  	  string   `json:"versionHex"`
-	MerkleRoot        string   `json:"merkleRoot"`
-	BlockTransactions []string `json:"tx"`
-	Time              int64    `json:"time"`
-	Nonce             uint32   `json:"nonce"`
-	Bits              string   `json:"bits"`
-	Difficulty        float64  `json:"difficulty"`
-	PreviousHash      string   `json:"previousBlockHash"`
-	NextHash          string   `json:"nextBlockHash"`
-
-}
 
 var Blocks []Block
 
@@ -87,6 +67,28 @@ var coinClientConfig = &rpcclient.ConnConfig {
 	DisableTLS:		configFile.DisableTLS,
 }
 
+func GoBlockRanger() {
+
+	// Get the current block count.
+	blockCount, err := coinClient.GetBlockCount()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Block count: %d", blockCount)
+
+	startIndex := int64(0)
+	endIndex := int64(blockCount)
+
+	if (blockCount > 500) {
+		endIndex = int64(499);
+	}
+	BlockRanger(coinClient, startIndex, endIndex, blockCount);
+
+	log.Println("All Done! Block Hight is ", blockCount)
+}
+
+
+
 
 //GetBlockObject
 func GetBlock(w http.ResponseWriter, r *http.Request)  {
@@ -112,31 +114,9 @@ func GetBlock(w http.ResponseWriter, r *http.Request)  {
 				"Please use a block hash, eg: 4b6c3362e2f2a6b6317c85ecaa0f5415167e2bb333d2bf3d3699d73df613b91f", 500)
 			return
 		}
-		blockArray := make([]Block, 1);
-		index := 0;
-		blockArray[index] = Block {
-			Height:  block.Height,
-			Hash: block.Hash,
-			Bits: block.Bits,
-			BlockTransactions: block.Tx,
-			Confirmations: block.Confirmations,
-			Difficulty: block.Difficulty,
-			Nonce: block.Nonce,
-			Time: block.Time,
-			MerkleRoot: block.MerkleRoot,
-			PreviousHash: block.PreviousHash,
-			NextHash: block.NextHash,
-			Size: block.Size,
-			VersionHex: block.VersionHex,
-			StrippedSize: block.StrippedSize,
-			Weight: block.Weight,
-			Version: block.Version,
 
-		};
 
-		log.Println(blockArray)
-
-		jsonBlock, err := json.Marshal(&blockArray)
+		jsonBlock, err := json.Marshal(&block)
 		data := json.RawMessage(jsonBlock)
 		json.NewEncoder(w).Encode(data)
 
@@ -166,35 +146,13 @@ func GetBlock(w http.ResponseWriter, r *http.Request)  {
 			http.Error(w, "ERROR Getting Block from Block Hash:  "+err.Error(), 500)
 		}
 
-		blockArray := make([]Block, 1);
-		index := 0;
-		blockArray[index] = Block {
-			Height:  block.Height,
-			Hash: block.Hash,
-			Bits: block.Bits,
-			BlockTransactions: block.Tx,
-			Confirmations: block.Confirmations,
-			Difficulty: block.Difficulty,
-			Nonce: block.Nonce,
-			Time: block.Time,
-			MerkleRoot: block.MerkleRoot,
-			PreviousHash: block.PreviousHash,
-			NextHash: block.NextHash,
-			Size: block.Size,
-			VersionHex: block.VersionHex,
-			StrippedSize: block.StrippedSize,
-			Weight: block.Weight,
-			Version: block.Version,
 
-		};
-
-		log.Println(blockArray)
-
-		jsonBlock, err := json.Marshal(&blockArray)
+		jsonBlock, err := json.Marshal(&block)
 		data := json.RawMessage(jsonBlock)
 		json.NewEncoder(w).Encode(data)
 	}
 }
+
 
 
 //GetTX
@@ -223,6 +181,8 @@ func GetTX(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(txhash)
 
 }
+
+
 
 //GetBlockchainInfo
 func GetBlockchainInfo(w http.ResponseWriter, r *http.Request) {

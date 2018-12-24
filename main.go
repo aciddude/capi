@@ -13,6 +13,10 @@ var configFile  = api.LoadConfig("./config/config.json")
 
 func main() {
 
+	log.Println("Running Block Ranger")
+	api.GoBlockRanger()
+
+
 	router := mux.NewRouter()
 	router.HandleFunc("/block/{HeightOrHash}", api.GetBlock).Methods("GET")
 	router.HandleFunc("/tx/{tx}", api.GetTX).Methods("GET")
