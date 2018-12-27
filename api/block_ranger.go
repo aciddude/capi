@@ -4,9 +4,33 @@ import (
 	"github.com/btcsuite/btcd/rpcclient"
 	"log"
 	"strconv"
+	"github.com/asdine/storm"
+	"time"
+	bolt "go.etcd.io/bbolt"
 )
 
-// Block Structs
+// DB Block Struct
+
+type dbBlock struct {
+	ID 				  int64    `json:"-"` /// The Primary Key
+	Hash              string   `storm:"index"`
+	Confirmations     int64
+	Size              int32
+	StrippedSize  	  int32
+	Weight      	  int32
+	Height            int64    `storm:"index"`
+	Version           int32
+	VersionHex  	  string
+	MerkleRoot        string
+	BlockTransactions []string `storm:"index"`
+	Time              int64
+	Nonce             uint32
+	Bits              string
+	Difficulty        float64
+	PreviousHash      string
+	NextHash          string
+
+}
 
 // Block struct
 type Block struct {
@@ -112,18 +136,69 @@ func BlockRanger (client *rpcclient.Client, startIndex int64, endIndex int64, bl
 			NextHash:          block.NextHash,
 			}
 		blockArrayIndex = blockArrayIndex +1
+
 	}
 	log.Println("Batch completed from:", logIndex, " to ", endIndex)
 	log.Println("Sending to DB")
+
+	for _, block := range blockArray {
+
+		dbIndex := block.Height
+		dbIndex	++
+		log.Println(block, dbIndex)
+		WriteBlock(block, dbIndex)
+
+	}
+
 	if (endIndex < blockCount) {
 		newEndIndex := int64(0)
 		if ((endIndex + 500) > blockCount) {
 			newEndIndex = blockCount
 		} else {
 			newEndIndex = endIndex + 500
-		}
+		} 
 		BlockRanger(client, endIndex + 1, newEndIndex, blockCount)
 	}
+
+}
+
+
+func WriteBlock(block Block, blockArrayIndex int64) {
+
+	db, err := storm.Open("blocks.db", storm.BoltOptions(600, &bolt.Options{Timeout: 5 * time.Second}))
+	if err != nil {
+		log.Println("ERROR: Cannot open DB", err)
+	}
+
+	blockDB := dbBlock{
+		ID:  			   blockArrayIndex,
+		Hash:              block.Hash,
+		Confirmations:     block.Confirmations,
+		Size:              block.Size,
+		StrippedSize:      block.StrippedSize,
+		Weight:            block.Weight,
+		Height:            block.Height,
+		Version:           block.Version,
+		VersionHex:        block.VersionHex,
+		MerkleRoot:        block.MerkleRoot,
+		BlockTransactions: block.BlockTransactions,
+		Time:              block.Time,
+		Nonce:             block.Nonce,
+		Bits:              block.Bits,
+		Difficulty:        block.Difficulty,
+		PreviousHash:      block.PreviousHash,
+		NextHash:          block.NextHash,
+	}
+
+	//initialise DB
+	db.Init(&dbBlock{})
+	// The block ranger array is every 500 blocks, Once we get empty blocks stop writing to DB
+	if block.Hash == "" {
+		db.Close()
+		return
+	}
+	db.Save(&blockDB)
+	db.Close()
 
 }
 

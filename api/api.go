@@ -12,6 +12,8 @@ import (
 	"time"
 	"io/ioutil"
 	"html/template"
+	"github.com/asdine/storm"
+	bolt "go.etcd.io/bbolt"
 )
 
 
@@ -67,6 +69,8 @@ var coinClientConfig = &rpcclient.ConnConfig {
 	DisableTLS:		configFile.DisableTLS,
 }
 
+
+// start the BlockRanger
 func GoBlockRanger() {
 
 	// Get the current block count.
@@ -252,7 +256,7 @@ func GetCoinCodexData(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
+/// To show a simple index page with the coin price info
 func IndexRoute (w http.ResponseWriter, r *http.Request) {
 
 	tmpl, err := template.ParseFiles("templates/index.tmpl")
@@ -295,3 +299,50 @@ func IndexRoute (w http.ResponseWriter, r *http.Request) {
 }
 
 
+
+/// GetBlock from DB using Height. Couldn't use height has Primary index as bolt doesn't like '0' or block 0
+/// Made my own dbBlock type with it's own "ID"
+func GetBlockFromDBHeight(w http.ResponseWriter, r *http.Request){
+
+	db, err := storm.Open("blocks.db", storm.BoltOptions(600, &bolt.Options{Timeout: 5 * time.Second}))
+	if err != nil {
+		log.Println("ERROR: Cannot open DB", err)
+	}
+
+	request := r.URL.Path
+	request = strings.TrimPrefix(request, "/blkdb/")
+
+	var block dbBlock
+	log.Println("Parse Request URL", request)
+	requestInt, err := strconv.ParseUint(request,10, 64)
+	if err != nil {
+		log.Println("ERROR: cannot parse URL", err)
+		http.Error(w, "ERROR: Could not parse URL \n"+err.Error(), 500)
+		db.Close()
+		return
+	}
+	/// Silly fix, Height  0 = DB Index 1
+	if requestInt == 0 {
+		err := db.One("ID", 1, &block)
+		if err != nil {
+			log.Println("ERROR: Block not found in DB", err)
+			http.Error(w, "ERROR: Block not found in DB \n"+err.Error(), 404)
+			db.Close()
+			return
+		}
+	} else {
+		err := db.One("ID",requestInt+1, &block)
+		if err != nil {
+			log.Println("ERROR: Block not found in DB", err)
+			http.Error(w, "ERROR: Block not found in DB \n"+err.Error(), 404)
+			db.Close()
+			return
+		}
+	}
+
+	log.Println("DB Request: ", request,  block)
+	json.NewEncoder(w).Encode(block)
+
+	db.Close()
+
+}
