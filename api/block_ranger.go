@@ -5,8 +5,7 @@ import (
 	"log"
 	"strconv"
 	"github.com/asdine/storm"
-	"time"
-	bolt "go.etcd.io/bbolt"
+	"os"
 )
 
 // DB Block Struct
@@ -165,7 +164,9 @@ func BlockRanger (client *rpcclient.Client, startIndex int64, endIndex int64, bl
 
 func WriteBlock(block Block, blockArrayIndex int64) {
 
-	db, err := storm.Open("blocks.db", storm.BoltOptions(600, &bolt.Options{Timeout: 5 * time.Second}))
+	//cmd := exec.Command("chmod", "666", "blocks.db")
+	db, err := storm.Open("blocks.db")
+
 	if err != nil {
 		log.Println("ERROR: Cannot open DB", err)
 	}
@@ -202,3 +203,14 @@ func WriteBlock(block Block, blockArrayIndex int64) {
 
 }
 
+func DBChecker (){
+
+
+	if _, err := os.Stat("blocks.db"); os.IsNotExist(err) {
+		log.Println("Running Block Ranger")
+		GoBlockRanger()
+	} else {
+		log.Println("DB Exists, checking DB.......")
+	}
+
+}

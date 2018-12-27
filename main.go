@@ -13,8 +13,11 @@ var configFile  = api.LoadConfig("./config/config.json")
 
 func main() {
 
-	log.Println("Running Block Ranger")
-	api.GoBlockRanger()
+
+	api.DBChecker()
+
+
+
 
 
 	router := mux.NewRouter()
