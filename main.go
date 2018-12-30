@@ -1,24 +1,18 @@
 package main
 
 import (
-
 	"log"
-	"github.com/gorilla/mux"
 	"net/http"
+
+	"github.com/gorilla/mux"
+
 	"github.com/aciddude/capi/api"
 )
 
-
-var configFile  = api.LoadConfig("./config/config.json")
+var configFile = api.LoadConfig("./config/config.json")
 
 func main() {
-
-
 	api.DBChecker()
-
-
-
-
 
 	router := mux.NewRouter()
 	router.HandleFunc("/block/{HeightOrHash}", api.GetBlock).Methods("GET")
@@ -27,6 +21,7 @@ func main() {
 	router.HandleFunc("/blockchaininfo", api.GetBlockchainInfo).Methods("GET")
 	router.HandleFunc("/blkdb/{Height}", api.GetBlockFromDBHeight).Methods("GET")
 	router.HandleFunc("/", api.IndexRoute).Methods("GET")
+
 	log.Println("capi v0.1 is running!")
 	log.Fatal(http.ListenAndServe(configFile.CapiPort, router))
 }

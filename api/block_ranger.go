@@ -1,25 +1,26 @@
 package api
 
 import (
-	"github.com/btcsuite/btcd/rpcclient"
 	"log"
-	"strconv"
-	"github.com/asdine/storm"
 	"os"
+	"strconv"
+
+	"github.com/asdine/storm"
+	"github.com/btcsuite/btcd/rpcclient"
 )
 
 // DB Block Struct
 
 type dbBlock struct {
-	ID 				  int64    `json:"-"` /// The Primary Key
-	Hash              string   `storm:"index"`
+	ID                int64  `json:"-"` /// The Primary Key
+	Hash              string `storm:"index"`
 	Confirmations     int64
 	Size              int32
-	StrippedSize  	  int32
-	Weight      	  int32
-	Height            int64    `storm:"index"`
+	StrippedSize      int32
+	Weight            int32
+	Height            int64 `storm:"index"`
 	Version           int32
-	VersionHex  	  string
+	VersionHex        string
 	MerkleRoot        string
 	BlockTransactions []string `storm:"index"`
 	Time              int64
@@ -28,7 +29,6 @@ type dbBlock struct {
 	Difficulty        float64
 	PreviousHash      string
 	NextHash          string
-
 }
 
 // Block struct
@@ -36,11 +36,11 @@ type Block struct {
 	Hash              string   `json:"hash"`
 	Confirmations     int64    `json:"confirmations"`
 	Size              int32    `json:"size"`
-	StrippedSize  	  int32	   `json:"strippedSize"`
-	Weight      	  int32	   `json:"weight"`
+	StrippedSize      int32    `json:"strippedSize"`
+	Weight            int32    `json:"weight"`
 	Height            int64    `json:"height"`
-	Version           int32	   `json:"version"`
-	VersionHex  	  string   `json:"versionHex"`
+	Version           int32    `json:"version"`
+	VersionHex        string   `json:"versionHex"`
 	MerkleRoot        string   `json:"merkleRoot"`
 	BlockTransactions []string `json:"tx"`
 	Time              int64    `json:"time"`
@@ -49,7 +49,6 @@ type Block struct {
 	Difficulty        float64  `json:"difficulty"`
 	PreviousHash      string   `json:"previousBlockHash"`
 	NextHash          string   `json:"nextBlockHash"`
-
 }
 
 type TxRaw struct {
@@ -96,16 +95,15 @@ type ScriptSig struct {
 	Hex string `json:"hex"`
 }
 
-
-func BlockRanger (client *rpcclient.Client, startIndex int64, endIndex int64, blockCount int64) {
+func BlockRanger(client *rpcclient.Client, startIndex int64, endIndex int64, blockCount int64) {
 
 	//For each item (block) in the array index, print block details
-	log.Println("starting block ranger at", strconv.FormatInt(startIndex,10) )
+	log.Println("starting block ranger at", strconv.FormatInt(startIndex, 10))
 
 	logIndex := startIndex
 	blockArray := make([]Block, 500)
 	blockArrayIndex := 0
-	for ; startIndex <= endIndex; startIndex++{
+	for ; startIndex <= endIndex; startIndex++ {
 		blockHash, err := client.GetBlockHash(startIndex)
 		if err != nil {
 			log.Println("Error getting block hash from height ", err)
@@ -133,8 +131,8 @@ func BlockRanger (client *rpcclient.Client, startIndex int64, endIndex int64, bl
 			Difficulty:        block.Difficulty,
 			PreviousHash:      block.PreviousHash,
 			NextHash:          block.NextHash,
-			}
-		blockArrayIndex = blockArrayIndex +1
+		}
+		blockArrayIndex = blockArrayIndex + 1
 
 	}
 	log.Println("Batch completed from:", logIndex, " to ", endIndex)
@@ -143,24 +141,23 @@ func BlockRanger (client *rpcclient.Client, startIndex int64, endIndex int64, bl
 	for _, block := range blockArray {
 
 		dbIndex := block.Height
-		dbIndex	++
+		dbIndex++
 		log.Println(block, dbIndex)
 		WriteBlock(block, dbIndex)
 
 	}
 
-	if (endIndex < blockCount) {
+	if endIndex < blockCount {
 		newEndIndex := int64(0)
-		if ((endIndex + 500) > blockCount) {
+		if (endIndex + 500) > blockCount {
 			newEndIndex = blockCount
 		} else {
 			newEndIndex = endIndex + 500
-		} 
-		BlockRanger(client, endIndex + 1, newEndIndex, blockCount)
+		}
+		BlockRanger(client, endIndex+1, newEndIndex, blockCount)
 	}
 
 }
-
 
 func WriteBlock(block Block, blockArrayIndex int64) {
 
@@ -172,7 +169,7 @@ func WriteBlock(block Block, blockArrayIndex int64) {
 	}
 
 	blockDB := dbBlock{
-		ID:  			   blockArrayIndex,
+		ID:                blockArrayIndex,
 		Hash:              block.Hash,
 		Confirmations:     block.Confirmations,
 		Size:              block.Size,
@@ -203,8 +200,7 @@ func WriteBlock(block Block, blockArrayIndex int64) {
 
 }
 
-func DBChecker (){
-
+func DBChecker() {
 
 	if _, err := os.Stat("blocks.db"); os.IsNotExist(err) {
 		log.Println("Running Block Ranger")
