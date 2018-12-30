@@ -5,7 +5,7 @@ import (
 	"log"
 	"github.com/gorilla/mux"
 	"net/http"
-	"capi/api"
+	"github.com/aciddude/capi/api"
 )
 
 
