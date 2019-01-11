@@ -10,7 +10,7 @@ import (
 	"io/ioutil"
 	"html/template"
 
-	"capi/coind"
+	"github.com/aciddude/capi/coind"
 
 
 	"github.com/asdine/storm"
