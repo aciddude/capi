@@ -5,7 +5,7 @@ type Coind struct {
 	client *rpcClient
 }
 
-// New return a new bitcoind
+// New return a new coin daemon
 func New(config Config, timeoutParam ...int) (*Coind, error) {
 	var timeout = config.RPCTimeout
 	// If the timeout is specified in timeoutParam, allow it.
