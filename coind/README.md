@@ -1,4 +1,4 @@
-####The below shows the functionality of the coind package
+#### The below shows the functionality of the coind package
 
 
 ```
