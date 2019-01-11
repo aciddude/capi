@@ -1,110 +1,47 @@
 package api
 
 import (
-	"encoding/json"
-	"html/template"
-	"io/ioutil"
-	"log"
 	"net/http"
-	"os"
-	"strconv"
+	"log"
 	"strings"
+	"encoding/json"
+	"strconv"
 	"time"
+	"io/ioutil"
+	"html/template"
+
+	"capi/coind"
+
 
 	"github.com/asdine/storm"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/rpcclient"
 	bolt "go.etcd.io/bbolt"
 )
 
-type Config struct {
-	Coin               string `json:"Coin"`
-	Ticker             string `json:"Ticker"`
-	Daemon             string `json:"Daemon"`
-	RPCUser            string `json:"RPCUser"`
-	RPCPassword        string `json:"RPCPassword"`
-	HTTPPostMode       bool
-	DisableTLS         bool
-	EnableCoinCodexAPI bool   `json:"EnableCoinCodexAPI"`
-	CapiPort           string `json:"capi_port"`
-}
+
+
 
 var Blocks []Block
 
-/// Function to Load Config file from disk as type Config struct
+var ConfigFile = coind.LoadConfig("./config/config.json")
 
-func LoadConfig(file string) Config {
-	// get the local config from disk
-	//filename is the path to the json config file
+var coinDaemon, err = coind.New(ConfigFile)
 
-	var config Config
-	configFile, err := os.Open(file)
-	defer configFile.Close()
-	if err != nil {
-		log.Fatal("ERROR: Could not find config file \n GoLang Error:  ", err)
-	}
 
-	decoder := json.NewDecoder(configFile)
-	err = decoder.Decode(&config)
-	if err != nil {
-		log.Fatal("ERROR: Could not decode json config  \n GoLang Error:  ", err)
-	}
-	return config
-}
-
-// config file from disk using loadConfig function
-var configFile = LoadConfig("./config/config.json")
-
-// coin client using coinClientConfig
-var coinClient, _ = rpcclient.New(coinClientConfig, nil)
-
-// coin client config for coinClient, loads values from configFile
-var coinClientConfig = &rpcclient.ConnConfig{
-	Host:         configFile.Daemon,
-	User:         configFile.RPCUser,
-	Pass:         configFile.RPCPassword,
-	HTTPPostMode: configFile.HTTPPostMode,
-	DisableTLS:   configFile.DisableTLS,
-}
-
-// start the BlockRanger
-func GoBlockRanger() {
-
-	// Get the current block count.
-	blockCount, err := coinClient.GetBlockCount()
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Printf("Block count: %d", blockCount)
-
-	startIndex := int64(0)
-	endIndex := int64(blockCount)
-
-	if blockCount > 500 {
-		endIndex = int64(499)
-	}
-	BlockRanger(coinClient, startIndex, endIndex, blockCount)
-
-	log.Println("All Done! Block Hight is ", blockCount)
-}
 
 //GetBlockObject
-func GetBlock(w http.ResponseWriter, r *http.Request) {
+func GetBlock(w http.ResponseWriter, r *http.Request)  {
+
 
 	urlBlock := r.URL.Path
-	if len(urlBlock) > 60 {
+	if len(urlBlock) > 60{
 
 		urlBlock = strings.TrimPrefix(urlBlock, "/block/")
 
 		log.Println("Block Hash", urlBlock)
 
-		hash, err := chainhash.NewHashFromStr(urlBlock)
-		if err != nil {
-			log.Print("Error with hash")
-		}
 
 		log.Println("Trying to get block hash: ", urlBlock)
-		block, err := coinClient.GetBlockVerbose(hash)
+		block, err := coinDaemon.GetBlock(urlBlock)
 		if err != nil {
 			log.Print("Error with hash requested: ", urlBlock)
 			http.Error(w, "ERROR: invalid block hash requested \n"+
@@ -112,9 +49,11 @@ func GetBlock(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+
 		jsonBlock, err := json.Marshal(&block)
 		data := json.RawMessage(jsonBlock)
 		json.NewEncoder(w).Encode(data)
+
 
 	} else {
 		urlBlock = strings.TrimPrefix(urlBlock, "/block/")
@@ -122,30 +61,33 @@ func GetBlock(w http.ResponseWriter, r *http.Request) {
 
 		blockHeight, err := strconv.ParseInt(urlBlock, 10, 64)
 		if err != nil {
-			log.Println("ERROR: invalid block height specified"+" -- Go Error:", err)
+			log.Println("ERROR: invalid block height specified" + " -- Go Error:" ,err)
 			http.Error(w, "ERROR: invalid block height specified \n"+"Please chose a number like '0' for the genesis block or '444' for block 444", 404)
 			return
 		}
 
 		log.Println("Block converted to int64", blockHeight)
-		blockHash, err := coinClient.GetBlockHash(blockHeight)
+		blockHash, err := coinDaemon.GetBlockHash(blockHeight)
 		if err != nil {
 			log.Println(err)
 			http.Error(w, "ERROR Getting Block Hash from Height: \n"+err.Error(), 500)
 
 		}
 
-		block, err := coinClient.GetBlockVerbose(blockHash)
+		block, err := coinDaemon.GetBlock(blockHash)
 		if err != nil {
 			log.Println(err)
 			http.Error(w, "ERROR Getting Block from Block Hash:  "+err.Error(), 500)
 		}
+
 
 		jsonBlock, err := json.Marshal(&block)
 		data := json.RawMessage(jsonBlock)
 		json.NewEncoder(w).Encode(data)
 	}
 }
+
+
 
 //GetTX
 func GetTX(w http.ResponseWriter, r *http.Request) {
@@ -155,14 +97,7 @@ func GetTX(w http.ResponseWriter, r *http.Request) {
 
 	log.Println("Parsed txid from request ", request)
 
-	requestHash, err := chainhash.NewHashFromStr(request)
-	if err != nil {
-		log.Println("ERROR:", err)
-		return
-
-	}
-
-	txhash, err := coinClient.GetRawTransactionVerbose(requestHash)
+	txhash, err := coinDaemon.GetRawTransaction(request, true)
 	if err != nil {
 		log.Println("ERROR:", err)
 		http.Error(w, "ERROR: invalid transaction id specified \n"+err.Error(), 404)
@@ -174,13 +109,15 @@ func GetTX(w http.ResponseWriter, r *http.Request) {
 
 }
 
+
+
 //GetBlockchainInfo
 func GetBlockchainInfo(w http.ResponseWriter, r *http.Request) {
 
-	getblockchaininfo, err := coinClient.GetBlockChainInfo()
+	getblockchaininfo, err := coinDaemon.GetBlockchainInfo()
 	if err != nil {
 		log.Println("ERROR: ", err)
-		http.Error(w, "ERROR: \n"+err.Error(), 500)
+		http.Error(w, "ERROR: \n"+ err.Error(), 500)
 		return
 	}
 
@@ -188,28 +125,30 @@ func GetBlockchainInfo(w http.ResponseWriter, r *http.Request) {
 
 }
 
+
+
 /// CoinCodex.com API for prices
 
 type coincodexapi struct {
-	Symbol             string  `json:"symbol"`
-	CoinName           string  `json:"coin_name"`
-	LastPrice          float64 `json:"last_price_usd"`
-	Price_TodayOpenUSD float64 `json:"today_open"`
-	Price_HighUSD      float64 `json:"price_high_24_usd"`
-	Price_LowUSD       float64 `json:"price_low_24_usd"`
-	Volume24USD        float64 `json:"volume_24_usd"`
-	DataProvider       string  `json:"data_provider"`
+	Symbol 					string	`json:"symbol"`
+	CoinName 				string  `json:"coin_name"`
+	LastPrice				float64	`json:"last_price_usd"`
+	Price_TodayOpenUSD		float64	`json:"today_open"`
+	Price_HighUSD			float64	`json:"price_high_24_usd"`
+	Price_LowUSD			float64	`json:"price_low_24_usd"`
+	Volume24USD				float64	`json:"volume_24_usd"`
+	DataProvider			string	`json:"data_provider"`
 }
 
 func GetCoinCodexData(w http.ResponseWriter, r *http.Request) {
-	if configFile.EnableCoinCodexAPI == false {
+	if ConfigFile.EnableCoinCodexAPI == false {
 		return
 	} else {
 
-		url := "https://coincodex.com/api/coincodex/get_coin/" + configFile.Ticker
+		url := "https://coincodex.com/api/coincodex/get_coin/"+ConfigFile.Ticker
 
 		client := http.Client{
-			Timeout: time.Second * 5, // 5 second timeout
+			Timeout:time.Second * 5, // 5 second timeout
 		}
 
 		request, err := http.NewRequest(http.MethodGet, url, nil)
@@ -229,7 +168,7 @@ func GetCoinCodexData(w http.ResponseWriter, r *http.Request) {
 		}
 
 		jsonData := coincodexapi{
-			DataProvider: "CoinCodex.com",
+			DataProvider:"CoinCodex.com",
 		}
 		jsonError := json.Unmarshal(body, &jsonData)
 		if jsonError != nil {
@@ -241,17 +180,18 @@ func GetCoinCodexData(w http.ResponseWriter, r *http.Request) {
 }
 
 /// To show a simple index page with the coin price info
-func IndexRoute(w http.ResponseWriter, r *http.Request) {
+func IndexRoute (w http.ResponseWriter, r *http.Request) {
 
 	tmpl, err := template.ParseFiles("templates/index.tmpl")
 	if err != nil {
 		log.Println("ERROR: Parsing template file index.tmpl", err)
 	}
 
-	url := "https://coincodex.com/api/coincodex/get_coin/" + configFile.Ticker
+
+	url := "https://coincodex.com/api/coincodex/get_coin/"+ConfigFile.Ticker
 
 	client := http.Client{
-		Timeout: time.Second * 5, // 5 second timeout
+		Timeout:time.Second * 5, // 5 second timeout
 	}
 
 	request, err := http.NewRequest(http.MethodGet, url, nil)
@@ -271,7 +211,7 @@ func IndexRoute(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonData := coincodexapi{
-		DataProvider: "CoinCodex.com",
+		DataProvider:"CoinCodex.com",
 	}
 	jsonError := json.Unmarshal(body, &jsonData)
 	if jsonError != nil {
@@ -281,9 +221,11 @@ func IndexRoute(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, jsonData)
 }
 
+
+
 /// GetBlock from DB using Height. Couldn't use height has Primary index as bolt doesn't like '0' or block 0
 /// Made my own dbBlock type with it's own "ID"
-func GetBlockFromDBHeight(w http.ResponseWriter, r *http.Request) {
+func GetBlockFromDBHeight(w http.ResponseWriter, r *http.Request){
 
 	db, err := storm.Open("blocks.db", storm.BoltOptions(600, &bolt.Options{Timeout: 5 * time.Second}))
 	if err != nil {
@@ -295,7 +237,7 @@ func GetBlockFromDBHeight(w http.ResponseWriter, r *http.Request) {
 
 	var block dbBlock
 	log.Println("Parse Request URL", request)
-	requestInt, err := strconv.ParseUint(request, 10, 64)
+	requestInt, err := strconv.ParseUint(request,10, 64)
 	if err != nil {
 		log.Println("ERROR: cannot parse URL", err)
 		http.Error(w, "ERROR: Could not parse URL \n"+err.Error(), 500)
@@ -312,7 +254,7 @@ func GetBlockFromDBHeight(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		err := db.One("ID", requestInt+1, &block)
+		err := db.One("ID",requestInt+1, &block)
 		if err != nil {
 			log.Println("ERROR: Block not found in DB", err)
 			http.Error(w, "ERROR: Block not found in DB \n"+err.Error(), 404)
@@ -321,15 +263,16 @@ func GetBlockFromDBHeight(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	log.Println("DB Request: ", request, block)
+	log.Println("DB Request: ", request,  block)
 	json.NewEncoder(w).Encode(block)
 
 	db.Close()
 
 }
 
+
 // Get TX from TXID
-func GetTXFromDB(w http.ResponseWriter, r *http.Request) {
+func GetTXFromDB(w http.ResponseWriter, r *http.Request){
 
 	db, err := storm.Open("tx.db", storm.BoltOptions(600, &bolt.Options{Timeout: 5 * time.Second}))
 	if err != nil {
@@ -347,16 +290,43 @@ func GetTXFromDB(w http.ResponseWriter, r *http.Request) {
 		db.Close()
 		return
 	}
-	err = db.One("Txid", request, &tx)
+	err = db.One("Txid",request, &tx)
 	if err != nil {
-		log.Println("ERROR: TX not found in DB", err)
-		http.Error(w, "ERROR: TX not found in DB \n"+err.Error(), 404)
+			log.Println("ERROR: TX not found in DB", err)
+			http.Error(w, "ERROR: TX not found in DB \n"+err.Error(), 404)
+			db.Close()
+			return
+	}
+
+	log.Println("DB Request: ", request,  tx)
+	json.NewEncoder(w).Encode(tx)
+	db.Close()
+
+}
+
+func GetWalletBlance(w http.ResponseWriter, r *http.Request){
+
+	db, err := storm.Open("tx.db", storm.BoltOptions(600, &bolt.Options{Timeout: 5 * time.Second}))
+	if err != nil {
+		log.Println("ERROR: Cannot open TX DB", err)
+	}
+
+	request := r.URL.Path
+	request = strings.TrimPrefix(request, "/wallet/")
+	log.Println("Parse Request URL", request)
+
+	var tx []dbTX
+
+	query := db.Find("Vout", request, &tx)
+	if err != nil {
+		log.Println("ERROR: cannot parse URL", err)
+		http.Error(w, "ERROR: Could not find Wallet \n"+err.Error(), 500)
 		db.Close()
 		return
 	}
 
-	log.Println("DB Request: ", request, tx)
+	log.Println(query)
+
 	json.NewEncoder(w).Encode(tx)
 	db.Close()
-
 }

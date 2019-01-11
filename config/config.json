@@ -1,12 +1,12 @@
 {
   "Coin"        :         "Feathercoin",
   "Ticker"      :         "FTC",
-  "Daemon"      :         "nomp.pools.ac:19337",
+  "RPCHost"     :        "nomp.pools.ac",
   "RPCUser"     :         "admin",
   "RPCPassword" :         "123456",
-  "HTTPPostMode":         true,
-  "DisableTLS"  :         true,
+  "RPCPort"     :         "19337",
+  "RPCTimeout"  :         20,
+  "SSL"         :         false,
   "EnableCoinCodexAPI" :  true,
   "capi_port"          :  ":8000"
 }
-
