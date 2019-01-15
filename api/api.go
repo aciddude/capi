@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"capi/datastore"
+
 	"github.com/aciddude/capi/coind"
 
 	"github.com/asdine/storm"
@@ -283,9 +285,9 @@ func GetTXFromDB(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func GetWalletBlance(w http.ResponseWriter, r *http.Request) {
+func GetWalletTransactions(w http.ResponseWriter, r *http.Request) {
 
-	db, err := storm.Open("tx.db", storm.BoltOptions(600, &bolt.Options{Timeout: 5 * time.Second}))
+	db, err := storm.Open("test.db", storm.BoltOptions(600, &bolt.Options{Timeout: 5 * time.Second}))
 	if err != nil {
 		log.Println("ERROR: Cannot open TX DB", err)
 	}
@@ -294,9 +296,9 @@ func GetWalletBlance(w http.ResponseWriter, r *http.Request) {
 	request = strings.TrimPrefix(request, "/wallet/")
 	log.Println("Parse Request URL", request)
 
-	var tx []dbTX
+	var address []datastore.DataStoreAddressSchema
 
-	query := db.Find("Vout", request, &tx)
+	query := db.Find("Address", []string{request}, &address)
 	if err != nil {
 		log.Println("ERROR: cannot parse URL", err)
 		http.Error(w, "ERROR: Could not find Wallet \n"+err.Error(), 500)
@@ -306,6 +308,6 @@ func GetWalletBlance(w http.ResponseWriter, r *http.Request) {
 
 	log.Println(query)
 
-	json.NewEncoder(w).Encode(tx)
+	json.NewEncoder(w).Encode(address)
 	db.Close()
 }
