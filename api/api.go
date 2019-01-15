@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"capi/datastore"
+	"github.com/aciddude/capi/datastore"
 
 	"github.com/aciddude/capi/coind"
 
