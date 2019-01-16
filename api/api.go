@@ -216,7 +216,7 @@ func GetBlockFromDBHeight(w http.ResponseWriter, r *http.Request) {
 	request := r.URL.Path
 	request = strings.TrimPrefix(request, "/blkdb/")
 
-	var block dbBlock
+	var block datastore.BlockDB
 	log.Println("Parse Request URL", request)
 	requestInt, err := strconv.ParseUint(request, 10, 64)
 	if err != nil {
@@ -262,7 +262,7 @@ func GetTXFromDB(w http.ResponseWriter, r *http.Request) {
 	request := r.URL.Path
 	request = strings.TrimPrefix(request, "/txdb/")
 
-	var tx dbTX
+	var tx datastore.TransactionDB
 	log.Println("Parse Request URL", request)
 	if err != nil {
 		log.Println("ERROR: cannot parse URL", err)

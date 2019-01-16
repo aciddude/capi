@@ -1,16 +1,21 @@
-package api
+package datastore
 
-import (
-	"log"
-	"os"
+import "github.com/aciddude/capi/coind"
 
-	"github.com/aciddude/capi/coind"
-)
+type AddressDB struct {
+	ID            int      `storm:"id,increment" json:"-"` // Primary Key
+	TxID          string   `storm:"index" json:"txid"`
+	Address       []string `storm:"index" json:"address"`
+	Received      float64  `json:"received"`
+	Confirmations int64    `json:"confirmations"`
+	TxInBlock     string   `json:"block_hash"`
+	TxTime        int64    `json:"tx_time"`
+}
 
 // DB Block Struct
 
-type dbBlock struct {
-	ID                int64  `json:"-"` /// The Primary Key
+type BlockDB struct {
+	ID                int64  `storm:"id,increment" json:"-"` // The Primary Key
 	Hash              string `storm:"index"`
 	Confirmations     int64
 	Size              int32
@@ -20,7 +25,7 @@ type dbBlock struct {
 	Version           int32
 	VersionHex        string
 	MerkleRoot        string
-	BlockTransactions []string `storm:"index"`
+	BlockTransactions []string
 	Time              int64
 	Nonce             uint32
 	Bits              string
@@ -29,8 +34,8 @@ type dbBlock struct {
 	NextHash          string
 }
 
-type dbTX struct {
-	ID            int64        `json:"-",storm:"increment,index"` /// The Primary Key
+type TransactionDB struct {
+	ID            int64        `json:"-",storm:"increment,index"` // The Primary Key
 	Hex           string       `json:"hex"`
 	Txid          string       `storm:"index"`
 	Hash          string       `json:"hash,omitempty"`
@@ -44,15 +49,4 @@ type dbTX struct {
 	Confirmations uint64       `json:"confirmations,omitempty"`
 	Time          int64        `json:"time,omitempty"`
 	Blocktime     int64        `json:"blocktime,omitempty"`
-}
-
-func DBChecker() {
-
-	if _, err := os.Stat("blocks.db"); os.IsNotExist(err) {
-		log.Println("Running Block Ranger")
-
-	} else {
-		log.Println("DB Exists, checking DB.......")
-	}
-
 }
