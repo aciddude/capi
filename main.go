@@ -14,8 +14,6 @@ var configFile = api.ConfigFile
 
 func main() {
 
-	go datastore.StoreBlocks()
-	go datastore.StoreAddresses()
 	DBExists := datastore.DatabaseExists()
 
 	if DBExists == false {
