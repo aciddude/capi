@@ -15,7 +15,7 @@ type AddressDB struct {
 // DB Block Struct
 
 type BlockDB struct {
-	ID                int64  `storm:"id,increment" json:"-"` // The Primary Key
+	ID                int64  // The Primary Key
 	Hash              string `storm:"index"`
 	Confirmations     int64
 	Size              int32
@@ -35,18 +35,18 @@ type BlockDB struct {
 }
 
 type TransactionDB struct {
-	ID            int64        `json:"-",storm:"increment,index"` // The Primary Key
+	ID            int64        `storm:"id,increment" json:"-"` // The Primary Key
 	Hex           string       `json:"hex"`
 	Txid          string       `storm:"index"`
 	Hash          string       `json:"hash,omitempty"`
-	Size          int32        `json:"size,omitempty"`
-	Vsize         int32        `json:"vsize,omitempty"`
-	Version       int32        `json:"version"`
-	LockTime      uint32       `json:"locktime"`
+	Size          int64        `json:"size,omitempty"`
+	Vsize         int64        `json:"vsize,omitempty"`
+	Version       int64        `json:"version"`
+	LockTime      int64        `json:"locktime"`
 	Vin           []coind.Vin  `storm:"inline"`
 	Vout          []coind.Vout `storm:"inline"`
 	BlockHash     string       `json:"blockhash,omitempty"`
-	Confirmations uint64       `json:"confirmations,omitempty"`
+	Confirmations int64        `json:"confirmations,omitempty"`
 	Time          int64        `json:"time,omitempty"`
 	Blocktime     int64        `json:"blocktime,omitempty"`
 }

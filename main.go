@@ -19,6 +19,7 @@ func main() {
 	if DBExists == false {
 		go datastore.StoreBlocks()
 		go datastore.StoreAddresses()
+		go datastore.StoreTransactions()
 	}
 
 	router := mux.NewRouter()
@@ -27,7 +28,7 @@ func main() {
 	router.HandleFunc("/market", api.GetCoinCodexData).Methods("GET")
 	router.HandleFunc("/blockchaininfo", api.GetBlockchainInfo).Methods("GET")
 	router.HandleFunc("/blkdb/{Height}", api.GetBlockFromDBHeight).Methods("GET")
-	//router.HandleFunc("/txdb/{txID}", api.GetTXFromDB).Methods("GET")
+	router.HandleFunc("/txdb/{txID}", api.GetTXFromDB).Methods("GET")
 	router.HandleFunc("/wallet/{WalletAddress}", api.GetWalletTransactions).Methods("GET")
 	router.HandleFunc("/", api.IndexRoute).Methods("GET")
 	log.Println("capi v0.1 is running!")

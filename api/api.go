@@ -254,7 +254,7 @@ func GetBlockFromDBHeight(w http.ResponseWriter, r *http.Request) {
 // Get TX from TXID
 func GetTXFromDB(w http.ResponseWriter, r *http.Request) {
 
-	db, err := storm.Open("tx.db", storm.BoltOptions(600, &bolt.Options{Timeout: 5 * time.Second}))
+	db, err := storm.Open("transactions.db", storm.BoltOptions(600, &bolt.Options{Timeout: 5 * time.Second}))
 	if err != nil {
 		log.Println("ERROR: Cannot open TX DB", err)
 	}
@@ -272,7 +272,7 @@ func GetTXFromDB(w http.ResponseWriter, r *http.Request) {
 	}
 	err = db.One("Txid", request, &tx)
 	if err != nil {
-		log.Println("ERROR: TX not found in DB", err)
+		log.Println("ERROR: TX not found in DB: ERROR", err)
 		http.Error(w, "ERROR: TX not found in DB \n"+err.Error(), 404)
 		db.Close()
 		return

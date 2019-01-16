@@ -7,16 +7,19 @@ import (
 
 // RawTx represents a raw transaction
 type RawTransaction struct {
-	Hex           string `json:"hex"`
 	Txid          string `json:"txid"`
-	Version       uint32 `json:"version"`
-	LockTime      uint32 `json:"locktime"`
+	Hash          string `json:"hash"`
+	Version       int64  `json:"version"`
+	Size          int64  `json:"size"`
+	Vsize         int64  `json:"vsize"`
+	Locktime      int64  `json:"locktime"`
 	Vin           []Vin  `json:"vin"`
 	Vout          []Vout `json:"vout"`
-	BlockHash     string `json:"blockhash,omitempty"`
-	Confirmations int64  `json:"confirmations,omitempty"`
-	Time          int64  `json:"time,omitempty"`
-	Blocktime     int64  `json:"blocktime,omitempty"`
+	Hex           string `json:"hex"`
+	Blockhash     string `json:"blockhash"`
+	Confirmations int64  `json:"confirmations"`
+	Time          int64  `json:"time"`
+	Blocktime     int64  `json:"blocktime"`
 }
 
 // Vin represents an IN value
