@@ -5,56 +5,21 @@ import (
 	"fmt"
 )
 
+// RawTx represents a raw transaction
 type RawTransaction struct {
-	Txid     string `json:"txid"`
-	Hash     string `json:"hash"`
-	Version  int    `json:"version"`
-	Size     int    `json:"size"`
-	Vsize    int    `json:"vsize"`
-	Locktime int    `json:"locktime"`
-	Vin      []struct {
-		Txid      string `json:"txid"`
-		Vout      int    `json:"vout"`
-		ScriptSig struct {
-			Asm string `json:"asm"`
-			Hex string `json:"hex"`
-		} `json:"scriptSig"`
-		Sequence int64 `json:"sequence"`
-	} `json:"vin"`
-	Vout []struct {
-		Value        float64 `json:"value"`
-		N            int     `json:"n"`
-		ScriptPubKey struct {
-			Asm       string   `json:"asm"`
-			Hex       string   `json:"hex"`
-			ReqSigs   int      `json:"reqSigs"`
-			Type      string   `json:"type"`
-			Addresses []string `json:"addresses"`
-		} `json:"scriptPubKey"`
-	} `json:"vout"`
 	Hex           string `json:"hex"`
-	Blockhash     string `json:"blockhash"`
-	Confirmations int    `json:"confirmations"`
-	Time          int    `json:"time"`
-	Blocktime     int    `json:"blocktime"`
+	Txid          string `json:"txid"`
+	Version       uint32 `json:"version"`
+	LockTime      uint32 `json:"locktime"`
+	Vin           []Vin  `json:"vin"`
+	Vout          []Vout `json:"vout"`
+	BlockHash     string `json:"blockhash,omitempty"`
+	Confirmations int64  `json:"confirmations,omitempty"`
+	Time          int64  `json:"time,omitempty"`
+	Blocktime     int64  `json:"blocktime,omitempty"`
 }
 
-//
-//// RawTx represents a raw transaction
-//type RawTransaction struct {
-//	Hex           string `json:"hex"`
-//	Txid          string `json:"txid"`
-//	Version       uint32 `json:"version"`
-//	LockTime      uint32 `json:"locktime"`
-//	Vin           []Vin  `json:"vin"`
-//	Vout          []Vout `json:"vout"`
-//	BlockHash     string `json:"blockhash,omitempty"`
-//	Confirmations uint64 `json:"confirmations,omitempty"`
-//	Time          int64  `json:"time,omitempty"`
-//	Blocktime     int64  `json:"blocktime,omitempty"`
-//}
-
-// Vin represent an IN value
+// Vin represents an IN value
 type Vin struct {
 	Coinbase  string    `json:"coinbase"`
 	Txid      string    `json:"txid"`
@@ -63,13 +28,14 @@ type Vin struct {
 	Sequence  uint32    `json:"sequence"`
 }
 
-// Vout represent an OUT value
+// Vout represents an OUT value
 type Vout struct {
 	Value        float64      `json:"value"`
 	N            int          `json:"n"`
 	ScriptPubKey ScriptPubKey `json:"scriptPubKey"`
 }
 
+// ScriptPubKey represents a scriptpubkey
 type ScriptPubKey struct {
 	Asm       string   `json:"asm"`
 	Hex       string   `json:"hex"`
@@ -78,7 +44,7 @@ type ScriptPubKey struct {
 	Addresses []string `json:"addresses,omitempty"`
 }
 
-// A ScriptSig represents a scriptsyg
+// A ScriptSig represents a scriptsig
 type ScriptSig struct {
 	Asm string `json:"asm"`
 	Hex string `json:"hex"`

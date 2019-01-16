@@ -5,14 +5,19 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/aciddude/capi/coind"
+	"capi/coind"
+
 	"github.com/asdine/storm"
 )
 
-type DataStoreAddressSchema struct {
-	ID          int      `storm:"id,increment" json:"-"` // primary key
-	Address     []string `storm:"index"`
-	Transaction string   `storm:"unique"`
+type AddressDB struct {
+	ID            int      `storm:"id,increment" json:"-"` // primary key
+	TxID          string   `storm:"index" json:"txid"`
+	Address       []string `storm:"index" json:"address"`
+	Received      float64  `json:"received"`
+	Confirmations int64    `json:"confirmations"`
+	TxInBlock     string   `json:"block_hash"`
+	TxTime        int64    `json:"tx_time"`
 }
 
 func StoreAddresses() {
@@ -24,7 +29,7 @@ func StoreAddresses() {
 	}
 
 	startHeight := 0
-	endHeight := 100
+	endHeight := 1000 // parse 1K blocks + transactions + addresses + ammount received, then store in DB
 	listsize := endHeight - startHeight
 
 	getblockhashrequest, err := coind.MakeBlockHashListRequest(startHeight, endHeight)
@@ -69,29 +74,34 @@ func StoreAddresses() {
 		fmt.Printf("ERROR:\nRaw Transacaction List Request %v ", err)
 	}
 
-	db, err := storm.Open("test.db")
+	db, err := storm.Open("addresses.db")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	var transaction coind.RawTransaction
+	var Data AddressDB
+	var tx coind.RawTransaction
 
 	for _, result := range rawtxlist {
 
-		json.Unmarshal(result.Result, &transaction)
+		json.Unmarshal(result.Result, &tx)
 
-		for _, add := range transaction.Vout {
-
-			DBAddr := DataStoreAddressSchema{
-				Address:     add.ScriptPubKey.Addresses,
-				Transaction: transaction.Txid,
+		for i, vout := range tx.Vout {
+			fmt.Printf("Parsing Addresses and Transactions to DB...... %v \n", vout.ScriptPubKey.Addresses)
+			Data = AddressDB{
+				TxID:          tx.Txid,
+				Address:       vout.ScriptPubKey.Addresses,
+				Received:      tx.Vout[i].Value,
+				Confirmations: tx.Confirmations,
+				TxInBlock:     tx.BlockHash,
+				TxTime:        tx.Time,
 			}
-			fmt.Printf("WRITING TO DB, %v \n", DBAddr)
-			err := db.Save(&DBAddr)
+			err = db.Save(&Data)
 			if err != nil {
 				fmt.Errorf("could not save config, %v", err)
 			}
+
 		}
 
 	}

@@ -10,9 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aciddude/capi/datastore"
-
-	"github.com/aciddude/capi/coind"
+	"capi/coind"
+	"capi/datastore"
 
 	"github.com/asdine/storm"
 	bolt "go.etcd.io/bbolt"
@@ -287,7 +286,7 @@ func GetTXFromDB(w http.ResponseWriter, r *http.Request) {
 
 func GetWalletTransactions(w http.ResponseWriter, r *http.Request) {
 
-	db, err := storm.Open("test.db", storm.BoltOptions(600, &bolt.Options{Timeout: 5 * time.Second}))
+	db, err := storm.Open("addresses.db", storm.BoltOptions(600, &bolt.Options{Timeout: 5 * time.Second}))
 	if err != nil {
 		log.Println("ERROR: Cannot open TX DB", err)
 	}
@@ -296,7 +295,7 @@ func GetWalletTransactions(w http.ResponseWriter, r *http.Request) {
 	request = strings.TrimPrefix(request, "/wallet/")
 	log.Println("Parse Request URL", request)
 
-	var address []datastore.DataStoreAddressSchema
+	var address []datastore.AddressDB
 
 	query := db.Find("Address", []string{request}, &address)
 	if err != nil {
@@ -305,8 +304,7 @@ func GetWalletTransactions(w http.ResponseWriter, r *http.Request) {
 		db.Close()
 		return
 	}
-
-	log.Println(query)
+	log.Println("HELLO", query)
 
 	json.NewEncoder(w).Encode(address)
 	db.Close()

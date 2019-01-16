@@ -1,11 +1,12 @@
 package main
 
 import (
-	"capi/datastore"
 	"log"
 	"net/http"
 
 	"github.com/aciddude/capi/api"
+	"github.com/aciddude/capi/datastore"
+	
 	"github.com/gorilla/mux"
 )
 
@@ -13,7 +14,7 @@ var configFile = api.ConfigFile
 
 func main() {
 
-	datastore.StoreAddresses()
+	go datastore.StoreAddresses()
 
 	api.DBChecker()
 
