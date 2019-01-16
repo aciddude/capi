@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"capi/coind"
+	"github.com/aciddude/capi/coind"
 )
 
 // DB Block Struct

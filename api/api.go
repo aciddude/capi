@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"capi/coind"
-	"capi/datastore"
+	"github.com/aciddude/capi/coind"
+	"github.com/aciddude/capi/datastore"
 
 	"github.com/asdine/storm"
 	bolt "go.etcd.io/bbolt"
