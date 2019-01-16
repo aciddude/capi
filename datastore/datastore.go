@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/aciddude/capi/coind"
 
@@ -15,6 +16,18 @@ import (
 
 var startHeight int = 0
 var endHeight int = 8000
+
+func DatabaseExists() bool {
+
+	if _, err := os.Stat("blocks.db"); os.IsNotExist(err) {
+		log.Println("Running Datastore")
+		return false
+
+	} else {
+		log.Println("DB Exists, checking DB.......")
+	}
+	return true
+}
 
 func StoreAddresses() {
 

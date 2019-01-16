@@ -16,6 +16,12 @@ func main() {
 
 	go datastore.StoreBlocks()
 	go datastore.StoreAddresses()
+	DBExists := datastore.DatabaseExists()
+
+	if DBExists == false {
+		go datastore.StoreBlocks()
+		go datastore.StoreAddresses()
+	}
 
 	router := mux.NewRouter()
 	router.HandleFunc("/block/{HeightOrHash}", api.GetBlock).Methods("GET")
