@@ -18,17 +18,17 @@ __Important!__ Your daemon's `coin.conf` file needs to have `txindex=1`
     + [Options](#options)
 * [Endpoints](#endpoints)
     + [`/address/{WalletAddress}`](#--address--walletaddress--)
+      - [Call](#call)
+      - [Response](#response)
+    + [`/tx/{TransactionID}`](#--tx--transactionid--)
       - [Call](#call-1)
       - [Response](#response-1)
-    + [`/tx/{TransactionID}`](#--tx--transactionid--)
-      - [Call](#call-2)
-      - [Response](#response-3)
     + [`/block/{BlockHashorBlockHeight}`](#--block--blockhashorblockheight--)
+      - [Call](#call-2)
+      - [Response](#response-2)
+    + [`/market`](#--market-)
       - [Call](#call-3)
       - [Response](#response-3)
-    + [`/market`](#--market-)
-      - [Call](#call-4)
-      - [Response](#response-4)
 
 
 ## Configuration
