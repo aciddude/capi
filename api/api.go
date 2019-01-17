@@ -292,7 +292,7 @@ func GetWalletTransactions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	request := r.URL.Path
-	request = strings.TrimPrefix(request, "/wallet/")
+	request = strings.TrimPrefix(request, "/address/")
 	log.Println("Parse Request URL", request)
 
 	var address []datastore.AddressDB

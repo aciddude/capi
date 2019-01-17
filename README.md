@@ -17,15 +17,18 @@ __Important!__ Your daemon's `coin.conf` file needs to have `txindex=1`
     + [Example](#example)
     + [Options](#options)
 * [Endpoints](#endpoints)
-    + [`/tx/{TransactionID}`](#--tx--transactionid--)
-      - [Call](#call)
-      - [Response](#response)
-    + [`/block/{BlockHashorBlockHeight}`](#--block--blockhashorblockheight--)
+    + [`/address/{WalletAddress}`](#--address--walletaddress--)
       - [Call](#call-1)
       - [Response](#response-1)
-    + [`/market`](#--market-)
+    + [`/tx/{TransactionID}`](#--tx--transactionid--)
       - [Call](#call-2)
-      - [Response](#response-2)
+      - [Response](#response-3)
+    + [`/block/{BlockHashorBlockHeight}`](#--block--blockhashorblockheight--)
+      - [Call](#call-3)
+      - [Response](#response-3)
+    + [`/market`](#--market-)
+      - [Call](#call-4)
+      - [Response](#response-4)
 
 
 ## Configuration
@@ -73,6 +76,51 @@ The following table describes all configurable options for capi.
 ## Endpoints
 
 Once capi is running you can hit the following api endpoints
+
+### `/address/{WalletAddress}`
+
+Returns an array of transactions and amounts received for the specified Address.
+
+#### Call
+
+* http://127.0.0.1:8000/address/mojQnATqdQhzKMGS6LnvBxdo1t2zTCTB2u
+
+#### Response
+
+```json
+[
+{
+"txid": "2edf6d9e9d2b7b7a8628a8e926550141bd3807fbc373aee420d5a44fcb66ee2a",
+"address": [
+"n25K9Zf4UvRo1TzgYcGReHRmhZUVR3vKLr"
+],
+"received": 80,
+"confirmations": 15083,
+"block_hash": "3527435a31c0f0904f4f5ecdfb423c7b60b6499b318d70985c91ec8e64b7678e",
+"tx_time": 1544781080
+},
+{
+"txid": "b63dced29e83cc18c62fa692395d32f673abb3fb374b8b3a03025041d941da24",
+"address": [
+"n25K9Zf4UvRo1TzgYcGReHRmhZUVR3vKLr"
+],
+"received": 80,
+"confirmations": 15082,
+"block_hash": "a0b195b32da8dbadbbc72898b4e22129f25c58720a0c61dce234bf42bc6907b4",
+"tx_time": 1544781082
+},
+{
+"txid": "bc76921962dc8901fa6c401b2a5c74d4eb614c3198151a040c3d1284615bc1df",
+"address": [
+"n25K9Zf4UvRo1TzgYcGReHRmhZUVR3vKLr"
+],
+"received": 80,
+"confirmations": 15081,
+"block_hash": "56ad3fe44c58b9c3a5db07933a6ea64b0414024b48d4874ab27f99b257666f69",
+"tx_time": 1544781096
+}
+]
+```
 
 ### `/tx/{TransactionID}`
 

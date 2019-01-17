@@ -29,7 +29,7 @@ func main() {
 	router.HandleFunc("/blockchaininfo", api.GetBlockchainInfo).Methods("GET")
 	router.HandleFunc("/blkdb/{Height}", api.GetBlockFromDBHeight).Methods("GET")
 	router.HandleFunc("/txdb/{txID}", api.GetTXFromDB).Methods("GET")
-	router.HandleFunc("/wallet/{WalletAddress}", api.GetWalletTransactions).Methods("GET")
+	router.HandleFunc("/address/{WalletAddress}", api.GetWalletTransactions).Methods("GET")
 	router.HandleFunc("/", api.IndexRoute).Methods("GET")
 	log.Println("capi v0.1 is running!")
 	log.Fatal(http.ListenAndServe(configFile.CapiPort, router))
