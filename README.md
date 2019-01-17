@@ -83,7 +83,7 @@ Returns an array of transactions and amounts received for the specified Address.
 
 #### Call
 
-* http://127.0.0.1:8000/address/mojQnATqdQhzKMGS6LnvBxdo1t2zTCTB2u
+* http://127.0.0.1:8000/address/n25K9Zf4UvRo1TzgYcGReHRmhZUVR3vKLr
 
 #### Response
 
