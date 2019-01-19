@@ -225,7 +225,6 @@ func GetBlockFromDBHeight(w http.ResponseWriter, r *http.Request) {
 		db.Close()
 		return
 	}
-	/// Silly fix, Height  0 = DB Index 1
 	if requestInt == 0 {
 		err := db.One("ID", 1, &block)
 		if err != nil {
@@ -235,7 +234,7 @@ func GetBlockFromDBHeight(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		err := db.One("ID", requestInt+1, &block)
+		err = db.One("Height", requestInt, &block)
 		if err != nil {
 			log.Println("ERROR: Block not found in DB", err)
 			http.Error(w, "ERROR: Block not found in DB \n"+err.Error(), 404)
@@ -243,12 +242,10 @@ func GetBlockFromDBHeight(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-
 	log.Println("DB Request: ", request, block)
 	json.NewEncoder(w).Encode(block)
 
 	db.Close()
-
 }
 
 // Get TX from TXID

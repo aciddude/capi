@@ -74,7 +74,7 @@ func (d *Coind) MakeGetBlockListRequest(listsize int, hashlist []string) (respon
 				Params: []interface{}{hashlist[requestArrayIndex], true},
 			}
 			if err != nil {
-				fmt.Printf("ERROR! %s", err, hashlist)
+				fmt.Printf("ERROR! %s %s", err, hashlist)
 			}
 
 		}

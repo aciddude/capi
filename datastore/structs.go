@@ -15,13 +15,13 @@ type AddressDB struct {
 // DB Block Struct
 
 type BlockDB struct {
-	ID                int64  // The Primary Key
-	Hash              string `storm:"index"`
+	ID                int64  `storm:"id,increment" json:"-"` // The Primary Key
+	Hash              string `storm:"index" json:"hash"`
 	Confirmations     int64
 	Size              int32
 	StrippedSize      int32
 	Weight            int32
-	Height            int64 `storm:"index"`
+	Height            int64 `storm:"index" json:"height"`
 	Version           int32
 	VersionHex        string
 	MerkleRoot        string
