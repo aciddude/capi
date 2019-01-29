@@ -1,12 +1,13 @@
 package datastore
 
 import (
-	"capi/coind"
 	"encoding/json"
 	"fmt"
 	"log"
 
 	"github.com/asdine/storm"
+
+	"github.com/aciddude/capi/coind"
 )
 
 func StoreTransactions() {

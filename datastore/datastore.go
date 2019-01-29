@@ -6,9 +6,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/aciddude/capi/coind"
-
 	"github.com/asdine/storm"
+
+	"github.com/aciddude/capi/coind"
 )
 
 // delcare start and end height of the scan....
