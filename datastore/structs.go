@@ -1,6 +1,8 @@
 package datastore
 
-import "github.com/aciddude/capi/coind"
+import (
+	"github.com/aciddude/capi/coind"
+)
 
 type AddressDB struct {
 	ID            int      `storm:"id,increment" json:"-"` // Primary Key
