@@ -1,4 +1,4 @@
-package datastore
+package old
 
 import (
 	"github.com/aciddude/capi/coind"

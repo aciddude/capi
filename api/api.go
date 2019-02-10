@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/aciddude/capi/coind"
-	"github.com/aciddude/capi/datastore"
+	datastore "github.com/aciddude/capi/datastore/old"
 
 	"github.com/asdine/storm"
 	bolt "go.etcd.io/bbolt"
