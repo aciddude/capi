@@ -1,5 +1,18 @@
 package capi
 
+import (
+	// Standard Library Imports
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"strings"
+
+	// External Imports
+	log "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
+)
+
 type datastore string
 
 const (
@@ -15,9 +28,7 @@ type Config struct {
 	Coins []Coin
 
 	// Datastore configuration.
-	Datastore datastore
-	// BoltDB specific datastore configuration.
-	BoltDB ConfigBoltDB
+	Datastore Datastore
 }
 
 // Coin provides the configuration required to connect to a coin daemon API.
@@ -43,11 +54,61 @@ type Coin struct {
 	SSL bool
 	// EnableCoinCodexAPI is whether to enable the coin's codex API.
 	// If not specified, the default is false.
-	EnableCoinCodexAPI bool
+	EnableCoinCodexAPI bool `yaml:"enableCoinCodexAPI"`
+}
+
+type Datastore struct {
+	// Backend is the specific datastore driver to use.
+	Backend datastore
+
+	// BoltDB specific datastore configuration.
+	BoltDB ConfigBoltDB `yaml:"boltDB"`
 }
 
 // ConfigBoltDB provides specific configuration customisation for BoltDB.
 type ConfigBoltDB struct {
 	// How long to wait before timing out a query.
 	Timeout int
+}
+
+// NewConfig returns a processed config object.
+func NewConfig(path string) (*Config, error) {
+	logger := log.WithFields(log.Fields{
+		"package":  "capi",
+		"function": "NewConfig",
+	})
+
+	if path == "" {
+		return nil, errors.New("filepath is required to open config")
+	}
+
+	f, err := ioutil.ReadFile(path)
+	if err != nil {
+		logger.WithError(err).Debug("no path provided")
+		return nil, err
+	}
+
+	config := &Config{}
+	switch {
+	case strings.Contains(path, ".yaml"):
+		err := yaml.Unmarshal(f, config)
+		if err != nil {
+			logger.WithError(err).Debug("error unmarshaling yaml config")
+			return nil, err
+		}
+
+	case strings.Contains(path, ".json"):
+		err := json.Unmarshal(f, config)
+		if err != nil {
+			logger.WithError(err).Debug("error unmarshaling json config")
+			return nil, err
+		}
+
+	default:
+		err := errors.New(fmt.Sprintf("'%s' contains an unprocessible config filetype", path))
+		logger.WithError(err).Debug("no filetype found")
+		return nil, err
+	}
+
+	return config, nil
 }

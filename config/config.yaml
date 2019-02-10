@@ -1,0 +1,17 @@
+coins:
+  - name: Feathercoin
+    code: FTC
+    host: nomp.pools.ac
+    port: 19337
+    username: admin
+    password: 123456
+    timeout: 20
+    ssl: false
+    enableCoinCodexAPI: true
+
+datastore:
+  backend: boltdb
+  boltDB:
+    timeout: 5
+
+port: 8080
