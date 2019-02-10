@@ -1,4 +1,4 @@
-package datastore
+package old
 
 import (
 	"encoding/json"
@@ -10,7 +10,7 @@ import (
 	"github.com/aciddude/capi/coind"
 )
 
-func StoreBlocks() {
+func StoreAddresses() {
 
 	daemonConfig := coind.LoadConfig("./config/config.json")
 	coinDaemon, err := coind.New(daemonConfig, daemonConfig.RPCTimeout)
@@ -46,50 +46,53 @@ func StoreBlocks() {
 
 	}
 	jsonblocklist, _ := json.Marshal(blocklist)
+	txlist, err := coind.ParseBlockTX(jsonblocklist)
+	if err != nil {
+		fmt.Printf("DATA STORE ERROR: Cannot parse transactions from block list \n %v", err)
 
-	var blocks coind.GetBlockResponse
+	}
 
-	json.Unmarshal([]byte(jsonblocklist), &blocks)
+	getrawtxrequest, err := coinDaemon.MakeRawTxListRequest(txlist)
+	if err != nil {
+		fmt.Printf("DATA STORE ERROR: Cannot create getrawtransaction list request \n %v", err)
+	}
 
-	db, err := storm.Open("blocks.db")
+	rawtxlist, err := coinDaemon.GetRawTransactionList(getrawtxrequest)
+	if err != nil {
+		fmt.Printf("ERROR:\nRaw Transacaction List Request %v ", err)
+	}
+
+	db, err := storm.Open("addresses.db")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	var Data BlockDB
-	var block coind.Block
+	var Data AddressDB
+	var tx coind.RawTransaction
 
-	for _, result := range blocklist {
+	for _, result := range rawtxlist {
 
-		json.Unmarshal(result.Result, &block)
+		json.Unmarshal(result.Result, &tx)
 
-		Data = BlockDB{
+		for i, vout := range tx.Vout {
+			//fmt.Printf("Parsing Addresses and Transactions to DB...... %v \n", vout.ScriptPubKey.Addresses)
+			Data = AddressDB{
+				TxID:          tx.Txid,
+				Address:       vout.ScriptPubKey.Addresses,
+				Received:      tx.Vout[i].Value,
+				Confirmations: tx.Confirmations,
+				TxInBlock:     tx.Blockhash,
+				TxTime:        tx.Time,
+			}
+			err = db.Save(&Data)
+			if err != nil {
+				fmt.Errorf("could not save config, %v", err)
+			}
 
-			Hash:              block.Hash,
-			Confirmations:     block.Confirmations,
-			Size:              block.Size,
-			StrippedSize:      block.StrippedSize,
-			Weight:            block.Weight,
-			Height:            block.Height,
-			Version:           block.Version,
-			VersionHex:        block.VersionHex,
-			MerkleRoot:        block.MerkleRoot,
-			BlockTransactions: block.BlockTransactions,
-			Time:              block.Time,
-			Nonce:             block.Nonce,
-			Bits:              block.Bits,
-			Difficulty:        block.Difficulty,
-			PreviousHash:      block.PreviousHash,
-			NextHash:          block.NextHash,
-		}
-
-		err = db.Save(&Data)
-		if err != nil {
-			fmt.Errorf("could not save config, %v", err)
 		}
 
 	}
 	db.Close()
-	log.Println("Finished storing blocks")
+	log.Println("Finished storing addresses")
 }

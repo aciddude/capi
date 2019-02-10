@@ -1,4 +1,4 @@
-package datastore
+package old
 
 import (
 	"encoding/json"
@@ -10,7 +10,7 @@ import (
 	"github.com/aciddude/capi/coind"
 )
 
-func StoreAddresses() {
+func StoreTransactions() {
 
 	daemonConfig := coind.LoadConfig("./config/config.json")
 	coinDaemon, err := coind.New(daemonConfig, daemonConfig.RPCTimeout)
@@ -46,6 +46,7 @@ func StoreAddresses() {
 
 	}
 	jsonblocklist, _ := json.Marshal(blocklist)
+
 	txlist, err := coind.ParseBlockTX(jsonblocklist)
 	if err != nil {
 		fmt.Printf("DATA STORE ERROR: Cannot parse transactions from block list \n %v", err)
@@ -62,37 +63,44 @@ func StoreAddresses() {
 		fmt.Printf("ERROR:\nRaw Transacaction List Request %v ", err)
 	}
 
-	db, err := storm.Open("addresses.db")
+	//fmt.Printf("%s", rawtxlist)
+	//jsontxns, _ := json.Marshal(rawtxlist)
+
+	db, err := storm.Open("transactions.db")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	var Data AddressDB
+	var Data TransactionDB
 	var tx coind.RawTransaction
 
 	for _, result := range rawtxlist {
 
 		json.Unmarshal(result.Result, &tx)
 
-		for i, vout := range tx.Vout {
-			//fmt.Printf("Parsing Addresses and Transactions to DB...... %v \n", vout.ScriptPubKey.Addresses)
-			Data = AddressDB{
-				TxID:          tx.Txid,
-				Address:       vout.ScriptPubKey.Addresses,
-				Received:      tx.Vout[i].Value,
-				Confirmations: tx.Confirmations,
-				TxInBlock:     tx.Blockhash,
-				TxTime:        tx.Time,
-			}
-			err = db.Save(&Data)
-			if err != nil {
-				fmt.Errorf("could not save config, %v", err)
-			}
-
+		Data = TransactionDB{
+			Hex:           tx.Hex,
+			Txid:          tx.Txid,
+			Hash:          tx.Hash,
+			Size:          tx.Size,
+			Vsize:         tx.Vsize,
+			Version:       tx.Version,
+			LockTime:      tx.Locktime,
+			Vin:           tx.Vin,
+			Vout:          tx.Vout,
+			BlockHash:     tx.Blockhash,
+			Confirmations: tx.Confirmations,
+			Time:          tx.Time,
+			Blocktime:     tx.Blocktime,
+		}
+		fmt.Printf("%s", Data)
+		err = db.Save(&Data)
+		if err != nil {
+			fmt.Errorf("could not save config, %v", err)
 		}
 
 	}
 	db.Close()
-	log.Println("Finished storing addresses")
+	log.Println("Finished storing transactions")
 }

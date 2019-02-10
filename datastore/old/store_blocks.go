@@ -1,4 +1,4 @@
-package datastore
+package old
 
 import (
 	"encoding/json"
@@ -10,7 +10,7 @@ import (
 	"github.com/aciddude/capi/coind"
 )
 
-func StoreTransactions() {
+func StoreBlocks() {
 
 	daemonConfig := coind.LoadConfig("./config/config.json")
 	coinDaemon, err := coind.New(daemonConfig, daemonConfig.RPCTimeout)
@@ -47,54 +47,43 @@ func StoreTransactions() {
 	}
 	jsonblocklist, _ := json.Marshal(blocklist)
 
-	txlist, err := coind.ParseBlockTX(jsonblocklist)
-	if err != nil {
-		fmt.Printf("DATA STORE ERROR: Cannot parse transactions from block list \n %v", err)
+	var blocks coind.GetBlockResponse
 
-	}
+	json.Unmarshal([]byte(jsonblocklist), &blocks)
 
-	getrawtxrequest, err := coinDaemon.MakeRawTxListRequest(txlist)
-	if err != nil {
-		fmt.Printf("DATA STORE ERROR: Cannot create getrawtransaction list request \n %v", err)
-	}
-
-	rawtxlist, err := coinDaemon.GetRawTransactionList(getrawtxrequest)
-	if err != nil {
-		fmt.Printf("ERROR:\nRaw Transacaction List Request %v ", err)
-	}
-
-	//fmt.Printf("%s", rawtxlist)
-	//jsontxns, _ := json.Marshal(rawtxlist)
-
-	db, err := storm.Open("transactions.db")
+	db, err := storm.Open("blocks.db")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	var Data TransactionDB
-	var tx coind.RawTransaction
+	var Data BlockDB
+	var block coind.Block
 
-	for _, result := range rawtxlist {
+	for _, result := range blocklist {
 
-		json.Unmarshal(result.Result, &tx)
+		json.Unmarshal(result.Result, &block)
 
-		Data = TransactionDB{
-			Hex:           tx.Hex,
-			Txid:          tx.Txid,
-			Hash:          tx.Hash,
-			Size:          tx.Size,
-			Vsize:         tx.Vsize,
-			Version:       tx.Version,
-			LockTime:      tx.Locktime,
-			Vin:           tx.Vin,
-			Vout:          tx.Vout,
-			BlockHash:     tx.Blockhash,
-			Confirmations: tx.Confirmations,
-			Time:          tx.Time,
-			Blocktime:     tx.Blocktime,
+		Data = BlockDB{
+
+			Hash:              block.Hash,
+			Confirmations:     block.Confirmations,
+			Size:              block.Size,
+			StrippedSize:      block.StrippedSize,
+			Weight:            block.Weight,
+			Height:            block.Height,
+			Version:           block.Version,
+			VersionHex:        block.VersionHex,
+			MerkleRoot:        block.MerkleRoot,
+			BlockTransactions: block.BlockTransactions,
+			Time:              block.Time,
+			Nonce:             block.Nonce,
+			Bits:              block.Bits,
+			Difficulty:        block.Difficulty,
+			PreviousHash:      block.PreviousHash,
+			NextHash:          block.NextHash,
 		}
-		fmt.Printf("%s", Data)
+
 		err = db.Save(&Data)
 		if err != nil {
 			fmt.Errorf("could not save config, %v", err)
@@ -102,5 +91,5 @@ func StoreTransactions() {
 
 	}
 	db.Close()
-	log.Println("Finished storing transactions")
+	log.Println("Finished storing blocks")
 }
