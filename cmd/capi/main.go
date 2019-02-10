@@ -7,7 +7,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/aciddude/capi/api"
-	"github.com/aciddude/capi/datastore"
+	datastore "github.com/aciddude/capi/datastore/old"
 )
 
 var configFile = api.ConfigFile
