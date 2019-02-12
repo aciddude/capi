@@ -125,5 +125,29 @@ func NewConfig(configFilepath string) (*Config, error) {
 		return nil, err
 	}
 
+	configureDefaults(config)
 	return config, nil
+}
+
+// configureDefaults ensures proper defaults are set.
+func configureDefaults(config *Config) {
+	if config.Port == 0 {
+		config.Port = 8080
+	}
+
+	switch config.Datastore.Backend {
+	case BoltDB:
+		configureBoltdbDefaults(&config.Datastore.BoltDB)
+	}
+}
+
+// configureBoltdbDefaults ensures proper defaults are set for using boltdb.
+func configureBoltdbDefaults(config *ConfigBoltDB) {
+	if config.DbPath == "" {
+		config.DbPath = "."
+	}
+
+	if config.Timeout == 0 {
+		config.Timeout = 10
+	}
 }

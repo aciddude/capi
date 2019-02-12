@@ -80,7 +80,7 @@ func NewDatastore(config *capi.Config) (store *Datastore, err error) {
 		store, err = NewBoltDB(config)
 
 	default:
-		err := errors.New(fmt.Sprintf("datastore %s is not implemented", config.Datastore))
+		err := errors.New(fmt.Sprintf("datastore '%s' is not implemented", config.Datastore.Backend))
 		logger.WithError(err).Debug("datastore type not matched")
 		return nil, err
 	}
