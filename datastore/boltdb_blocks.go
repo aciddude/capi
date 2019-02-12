@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	// External Imports
+	log "github.com/sirupsen/logrus"
 	bolt "go.etcd.io/bbolt"
 
 	// Internal Imports
@@ -14,43 +15,77 @@ import (
 
 // Blocks provides a boltdb backed datastore implementation for storing blocks.
 type Blocks struct {
+	// dbpath is the path to where the boltdb datafiles are stored.
+	dbpath string
+
+	// DB contains the boltdb handler to access the underlying buckets.
 	DB *bolt.DB
-	// the list of coins supported by the underlying DB.
+	// Coins contains the list of coins supported by the underlying DB.
 	Coins []string
-	// options are specific boltdb configurtions.
+	// Options are specific boltdb configurations.
 	Options *bolt.Options
 }
 
 // CreateSchema implements datastore.Creater
-func (b *Blocks) CreateSchema(ctx context.Context, coins []string) error {
-	for _, coin := range coins {
-		err := b.DB.Update(func(tx *bolt.Tx) error {
+func (b *Blocks) CreateSchema(ctx context.Context, coins []string) (err error) {
+	b.DB, err = bolt.Open(b.dbpath, 0666, b.Options)
+	if err != nil {
+		return err
+	}
+
+	err = b.DB.Update(func(tx *bolt.Tx) error {
+		for _, coin := range coins {
 			_, err := tx.CreateBucket([]byte(coin))
 			if err != nil {
-				return fmt.Errorf("create bucket: %s", err)
+				return fmt.Errorf("error creating bucket: %s", err)
 			}
-			return nil
-		})
+		}
+		return nil
+	})
 
+	return err
+}
+
+// Configure implements Configurer.Configure
+func (b *Blocks) Configure(ctx context.Context, coins []string) (err error) {
+	if b.DB == nil {
+		b.DB, err = bolt.Open(b.dbpath, 0666, b.Options)
 		if err != nil {
 			return err
 		}
 	}
 
-	return nil
+	// Update database buckets on first up to ensure any added coins are
+	// bucketed correctly.
+	err = b.DB.Update(func(tx *bolt.Tx) error {
+		for _, coin := range coins {
+			_, err := tx.CreateBucketIfNotExists([]byte(coin))
+			if err != nil {
+				return fmt.Errorf("error creating bucket: %s", err)
+			}
+		}
+		return nil
+	})
+
+	return err
 }
 
-// Configure implements Configurer.Configure
-func (b *Blocks) Configure(ctx context.Context, coins []string) error {
-	// nothing to configure here...
-	return nil
-}
-
-// IsCreated returns a bool to trigger crea
+// IsCreated returns a bool to trigger required creation logic
 func (b *Blocks) IsCreated(ctx context.Context, coins []string) bool {
-	// TODO: implement logic
+	logger := log.WithFields(log.Fields{
+		"package": "datastore",
+		"manager": "Blocks",
+		"method":  "IsCreated",
+	})
 
-	return false
+	dbpath := fmt.Sprintf("%s/%s", b.dbpath, boltdbPathBlocks)
+	ok, err := fileExists(dbpath)
+	if err != nil {
+		logger.WithError(err).Debug("error checking for database")
+	}
+
+	b.dbpath = dbpath
+	return ok
 }
 
 // LastID returns the last known ID stored of the provided coin.
