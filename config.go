@@ -16,6 +16,7 @@ import (
 type datastore string
 
 const (
+	// BoltDB codifies the value to specify to use boltdb as a datastore.
 	BoltDB datastore = "boltdb"
 )
 
@@ -57,55 +58,57 @@ type Coin struct {
 	EnableCoinCodexAPI bool `yaml:"enableCoinCodexAPI"`
 }
 
+// Datastore provides customization for backend datastores.
 type Datastore struct {
 	// Backend is the specific datastore driver to use.
 	Backend datastore
 
 	// BoltDB specific datastore configuration.
-	BoltDB ConfigBoltDB `yaml:"boltDB"`
+	BoltDB ConfigBoltDB `yaml:"boltdb"`
 }
 
 // ConfigBoltDB provides specific configuration customisation for BoltDB.
 type ConfigBoltDB struct {
-	// How long to wait before timing out a query.
+	// Timeout specifies, in seconds, how long to wait before timing out when
+	// trying to gain a file lock on the database's BoltDB data file.
 	Timeout int
 }
 
 // NewConfig returns a processed config object.
-func NewConfig(path string) (*Config, error) {
+func NewConfig(configFilepath string) (*Config, error) {
 	logger := log.WithFields(log.Fields{
 		"package":  "capi",
 		"function": "NewConfig",
 	})
 
-	if path == "" {
+	if configFilepath == "" {
 		return nil, errors.New("filepath is required to open config")
 	}
 
-	f, err := ioutil.ReadFile(path)
+	rawConfigFile, err := ioutil.ReadFile(configFilepath)
 	if err != nil {
-		logger.WithError(err).Debug("no path provided")
+		logger.WithError(err).Debug("filepath not provided")
 		return nil, err
 	}
 
 	config := &Config{}
 	switch {
-	case strings.Contains(path, ".yaml"):
-		err := yaml.Unmarshal(f, config)
+	case strings.Contains(configFilepath, ".yaml"):
+		err := yaml.Unmarshal(rawConfigFile, config)
 		if err != nil {
 			logger.WithError(err).Debug("error unmarshaling yaml config")
 			return nil, err
 		}
 
-	case strings.Contains(path, ".json"):
-		err := json.Unmarshal(f, config)
+	case strings.Contains(configFilepath, ".json"):
+		err := json.Unmarshal(rawConfigFile, config)
 		if err != nil {
 			logger.WithError(err).Debug("error unmarshaling json config")
 			return nil, err
 		}
 
 	default:
-		err := errors.New(fmt.Sprintf("'%s' contains an unprocessible config filetype", path))
+		err := errors.New(fmt.Sprintf("'%s' contains an unprocessible config filetype", configFilepath))
 		logger.WithError(err).Debug("no filetype found")
 		return nil, err
 	}

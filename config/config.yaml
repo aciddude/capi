@@ -1,17 +1,48 @@
-coins:
-  - name: Feathercoin
-    code: FTC
-    host: nomp.pools.ac
-    port: 19337
-    username: admin
-    password: 123456
-    timeout: 20
-    ssl: false
-    enableCoinCodexAPI: true
+#####################################
+#  CAPI Example Configuration file  #
+#####################################
 
-datastore:
-  backend: boltdb
-  boltDB:
-    timeout: 5
-
+# port is the host port that CAPI will bind to in order to serve it's API.
 port: 8080
+
+# coins contains a array of coins that can talk using the Bitcoind RPC-API.
+coins:
+- # name provides the human readable name of the coin.
+  name: Feathercoin
+  # code provides the 3-4 letter coin code.
+  code: FTC
+  # host is the coin daemon's resolvable hostname to connect to.
+  host: nomp.pools.ac
+  # port is the coin daemon's port to connect to.
+  port: 19337
+  # username is the username to use in order to authenticate to the coin daemon.
+  username: admin
+  # password is the password to use in order to authenticate to the coin daemon.
+  password: 123456
+  # timeout is how long to wait between HTTP requests to wait before timing out.
+  timeout: 20
+  # ssl defines whether coind will communicate over SSL.
+  ssl: false
+  # enableCoinCodexAPI enables or disables the coin codex API.
+  enableCoinCodexAPI: true
+
+# datastore allows you to select and customise specific datastore backend
+# options.
+datastore:
+  # backend specifies the datastore driver to use.
+  # Supported datastore backends:
+  # - boltdb: An embedded key/value database.
+  backend: boltdb
+
+  # boltdb provides customization options for BoltDB.
+  boltdb:
+    # if you want capi to store data files at a path other than where the binary
+    # is started from, you can specify a dbPath.
+    dbPath: .
+
+    # timeout is the amount of time, in seconds, that BoltDB will wait before
+    # timing out when trying to perform a database operation.
+    # Note: This will only happen if BoltDB isn't able to gain a file lock on
+    # the database file, so check it isn't already in use somewhere on your
+    # filesystem. (maybe by another capi process...?)
+    timeout: 5
