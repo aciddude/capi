@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	// External Imports
 	log "github.com/sirupsen/logrus"
@@ -88,10 +89,11 @@ func NewDatastore(config *capi.Config) (store *Datastore, err error) {
 	// Bind in coins for database schema access.
 	var coins []string
 	for _, coin := range config.Coins {
-		if coin.Name != "" {
-			coins = append(coins, coin.Name)
+		if coin.Code != "" {
+			coins = append(coins, strings.ToLower(coin.Code))
 		}
 	}
+	store.coins = coins
 
 	// Bind datastore resource handlers into store.managers to enable easy
 	// calling of functionality between resources.
