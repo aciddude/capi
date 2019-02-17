@@ -21,15 +21,17 @@ type BlockManager interface {
 // and delete blockchain block resources for multiple coins.
 type BlockStorer interface {
 	// List enables filtering for blocks in the datastore.
-	List(ctx context.Context, coin string, query ListBlocksRequest) (blocks []*capi.Block, err error)
+	List(ctx context.Context, coin string, query ListBlocksRequest) ([]*capi.Block, error)
 	// Create creating a block in the datastore.
-	Create(ctx context.Context, coin string, query CreateBlockRequest) (block *capi.Block, err error)
+	Create(ctx context.Context, coin string, newEntity *capi.Block) (*capi.Block, error)
 	// CreateBulk enables bulk creation of blocks in the datastore.
-	CreateBulk(ctx context.Context, coin string, query []CreateBlockRequest) (blocks []*capi.Block, err error)
+	CreateBulk(ctx context.Context, coin string, query []CreateBlockRequest) ([]*capi.Block, error)
+	// Get enables retrieving a block given an ID.
+	Get(ctx context.Context, coin string, id string) (block *capi.Block, err error)
 	// Update enables updating a block resource in the datastore.
-	Update(ctx context.Context, coin string, query UpdateBlockRequest) (block *capi.Block, err error)
+	Update(ctx context.Context, coin string, id string, updatedEntity *capi.Block) (*capi.Block, error)
 	// Delete removes a block from the datastore.
-	Delete(ctx context.Context, coin string, query DeleteBlockRequest) (err error)
+	Delete(ctx context.Context, coin string, id string) (err error)
 }
 
 // ListBlocksRequest enables filtering blocks based on the following
