@@ -2,6 +2,7 @@ package datastore
 
 import (
 	// Standard Library Imports
+	"os"
 	"time"
 
 	// External Imports
@@ -40,8 +41,17 @@ func NewBoltDB(config *capi.Config) (*Datastore, error) {
 		}
 	}
 
+	// Ensure DB path exists, if not, create the path.
+	ok, _ := fileExists(config.Datastore.BoltDB.DbPath)
+	if !ok {
+		err := os.MkdirAll(config.Datastore.BoltDB.DbPath, os.ModePerm)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	blocks := &Blocks{
-		dbpath: config.Datastore.BoltDB.DbPath,
+		DBPath: config.Datastore.BoltDB.DbPath,
 
 		DB:      nil,
 		Coins:   coins,
@@ -49,7 +59,7 @@ func NewBoltDB(config *capi.Config) (*Datastore, error) {
 	}
 
 	transactions := &Transactions{
-		dbpath: config.Datastore.BoltDB.DbPath,
+		DBPath: config.Datastore.BoltDB.DbPath,
 
 		DB:      nil,
 		Coins:   coins,
