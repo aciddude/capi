@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	// External Imports
+	"github.com/asdine/storm"
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	bolt "go.etcd.io/bbolt"
 
@@ -16,10 +18,13 @@ import (
 // Blocks provides a boltdb backed datastore implementation for storing blocks.
 type Blocks struct {
 	// dbpath is the path to where the boltdb datafiles are stored.
-	dbpath string
+	DBPath string
 
 	// DB contains the boltdb handler to access the underlying buckets.
 	DB *bolt.DB
+	// storm is a wrapper around BoltDB that provides higher level ORM based
+	// operations used internally to easily perform queries.
+	storm *storm.DB
 	// Coins contains the list of coins supported by the underlying DB.
 	Coins []string
 	// Options are specific boltdb configurations.
@@ -28,14 +33,19 @@ type Blocks struct {
 
 // CreateSchema implements datastore.Creater
 func (b *Blocks) CreateSchema(ctx context.Context, coins []string) (err error) {
-	b.DB, err = bolt.Open(b.dbpath, 0666, b.Options)
+	b.DB, err = bolt.Open(b.DBPath, 0666, b.Options)
+	if err != nil {
+		return err
+	}
+
+	b.storm, err = storm.Open(b.DBPath, storm.UseDB(b.DB))
 	if err != nil {
 		return err
 	}
 
 	err = b.DB.Update(func(tx *bolt.Tx) error {
 		for _, coin := range coins {
-			_, err := tx.CreateBucket([]byte(coin))
+			_, err := tx.CreateBucketIfNotExists([]byte(coin))
 			if err != nil {
 				return fmt.Errorf("error creating bucket: %s", err)
 			}
@@ -49,7 +59,14 @@ func (b *Blocks) CreateSchema(ctx context.Context, coins []string) (err error) {
 // Configure implements Configurer.Configure
 func (b *Blocks) Configure(ctx context.Context, coins []string) (err error) {
 	if b.DB == nil {
-		b.DB, err = bolt.Open(b.dbpath, 0666, b.Options)
+		b.DB, err = bolt.Open(b.DBPath, 0666, b.Options)
+		if err != nil {
+			return err
+		}
+	}
+
+	if b.storm == nil {
+		b.storm, err = storm.Open(b.DBPath, storm.UseDB(b.DB))
 		if err != nil {
 			return err
 		}
@@ -78,13 +95,13 @@ func (b *Blocks) IsCreated(ctx context.Context, coins []string) bool {
 		"method":  "IsCreated",
 	})
 
-	dbpath := fmt.Sprintf("%s/%s", b.dbpath, boltdbPathBlocks)
+	dbpath := fmt.Sprintf("%s/%s", b.DBPath, boltdbPathBlocks)
 	ok, err := fileExists(dbpath)
 	if err != nil {
 		logger.WithError(err).Debug("error checking for database")
 	}
 
-	b.dbpath = dbpath
+	b.DBPath = dbpath
 	return ok
 }
 
@@ -108,29 +125,83 @@ func (b *Blocks) List(ctx context.Context, coin string, query ListBlocksRequest)
 }
 
 // Create creating a block in the datastore.
-func (b *Blocks) Create(ctx context.Context, coin string, query CreateBlockRequest) (block *capi.Block, err error) {
-	// TODO: Implement logic
+func (b *Blocks) Create(ctx context.Context, coin string, newEntity *capi.Block) (block *capi.Block, err error) {
+	bucket := b.storm.From(coin)
 
-	return nil, nil
+	if newEntity.ID == "" {
+		newEntity.ID = uuid.New().String()
+	}
+
+	err = bucket.Save(newEntity)
+	if err != nil {
+		return block, err
+	}
+
+	return newEntity, nil
 }
 
 // CreateBulk enables bulk creation of blocks in the datastore.
-func (b *Blocks) CreateBulk(ctx context.Context, coin string, query []CreateBlockRequest) (blocks []*capi.Block, err error) {
+func (b *Blocks) CreateBulk(ctx context.Context, coin string, query []CreateBlockRequest) ([]*capi.Block, error) {
 	// TODO: Implement logic
 
 	return nil, nil
+}
+
+// Get enables retrieving a block given an ID.
+func (b *Blocks) Get(ctx context.Context, coin string, id string) (block *capi.Block, err error) {
+	bucket := b.storm.From(coin)
+
+	block = &capi.Block{}
+	err = bucket.One("ID", id, block)
+	if err != nil {
+		switch err {
+		case storm.ErrNotFound:
+			return nil, ErrNotFound
+
+		default:
+			// TODO: debug logging for non-captured errors
+			return nil, err
+		}
+	}
+
+	return
 }
 
 // Update enables updating a block resource in the datastore.
-func (b *Blocks) Update(ctx context.Context, coin string, query UpdateBlockRequest) (block *capi.Block, err error) {
-	// TODO: Implement logic
+func (b *Blocks) Update(ctx context.Context, coin string, id string, updatedEntity *capi.Block) (block *capi.Block, err error) {
+	bucket := b.storm.From(coin)
 
-	return nil, nil
+	err = bucket.Update(updatedEntity)
+	if err != nil {
+		switch err {
+		case storm.ErrNotFound:
+			return nil, ErrNotFound
+
+		default:
+			// TODO: debug logging for non-captured errors
+			return nil, err
+		}
+	}
+
+	return updatedEntity, err
 }
 
 // Delete removes a block from the datastore.
-func (b *Blocks) Delete(ctx context.Context, coin string, query DeleteBlockRequest) (err error) {
-	// TODO: Implement logic
+func (b *Blocks) Delete(ctx context.Context, coin string, id string) (err error) {
+	bucket := b.storm.From(coin)
 
-	return nil
+	block := &capi.Block{ID: id}
+	err = bucket.DeleteStruct(block)
+	if err != nil {
+		switch err {
+		case storm.ErrNotFound:
+			return ErrNotFound
+
+		default:
+			// TODO: debug logging for non-captured errors
+			return err
+		}
+	}
+
+	return
 }
