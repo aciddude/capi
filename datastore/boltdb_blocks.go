@@ -141,10 +141,32 @@ func (b *Blocks) Create(ctx context.Context, coin string, newEntity *capi.Block)
 }
 
 // CreateBulk enables bulk creation of blocks in the datastore.
-func (b *Blocks) CreateBulk(ctx context.Context, coin string, query []CreateBlockRequest) ([]*capi.Block, error) {
-	// TODO: Implement logic
+func (b *Blocks) CreateBulk(ctx context.Context, coin string, newEntities []*capi.Block) (blocks []*capi.Block, err error) {
+	bucket, err := b.storm.From(coin).WithBatch(true).Begin(true)
+	if err != nil {
+		return
+	}
+	defer bucket.Rollback()
 
-	return nil, nil
+	for _, block := range newEntities {
+		if block.ID == "" {
+			block.ID = uuid.New().String()
+		}
+
+		err = bucket.Save(block)
+		if err != nil {
+			return nil, err
+		}
+
+		blocks = append(blocks, block)
+	}
+
+	err = bucket.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	return blocks, nil
 }
 
 // Get enables retrieving a block given an ID.

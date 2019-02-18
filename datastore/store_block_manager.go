@@ -25,7 +25,7 @@ type BlockStorer interface {
 	// Create creating a block in the datastore.
 	Create(ctx context.Context, coin string, newEntity *capi.Block) (*capi.Block, error)
 	// CreateBulk enables bulk creation of blocks in the datastore.
-	CreateBulk(ctx context.Context, coin string, query []CreateBlockRequest) ([]*capi.Block, error)
+	CreateBulk(ctx context.Context, coin string, query []*capi.Block) ([]*capi.Block, error)
 	// Get enables retrieving a block given an ID.
 	Get(ctx context.Context, coin string, id string) (block *capi.Block, err error)
 	// Update enables updating a block resource in the datastore.
@@ -41,20 +41,4 @@ type ListBlocksRequest struct {
 	WalletID string `json:"walletId"`
 	// TransactionID enables filtering blocks based on a Transaction.
 	TransactionID string `json:"TransactionId"`
-}
-
-// CreateBlockRequest creates a Block.
-type CreateBlockRequest struct {
-	Block *capi.Block
-}
-
-// UpdateBlockRequest updates the block, with the newly provided resource.
-type UpdateBlockRequest struct {
-	ID    string
-	Block *capi.Block
-}
-
-// DeleteBlockRequest deletes the specified block.
-type DeleteBlockRequest struct {
-	ID string
 }
