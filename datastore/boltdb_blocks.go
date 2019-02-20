@@ -58,9 +58,17 @@ func (b *Blocks) CreateSchema(ctx context.Context, coins []string) (err error) {
 
 // Configure implements Configurer.Configure
 func (b *Blocks) Configure(ctx context.Context, coins []string) (err error) {
+	logger := log.WithFields(log.Fields{
+		"package": "datastore",
+		"backend": "boltdb",
+		"manager": "Blocks",
+		"method":  "IsCreated",
+	})
+
 	if b.DB == nil {
 		b.DB, err = bolt.Open(b.DBPath, 0666, b.Options)
 		if err != nil {
+			logger.WithError(err).Debug("error opening boltdb")
 			return err
 		}
 	}
@@ -68,6 +76,7 @@ func (b *Blocks) Configure(ctx context.Context, coins []string) (err error) {
 	if b.storm == nil {
 		b.storm, err = storm.Open(b.DBPath, storm.UseDB(b.DB))
 		if err != nil {
+			logger.WithError(err).Debug("error opening boltdb with storm")
 			return err
 		}
 	}
@@ -78,9 +87,11 @@ func (b *Blocks) Configure(ctx context.Context, coins []string) (err error) {
 		for _, coin := range coins {
 			_, err := tx.CreateBucketIfNotExists([]byte(coin))
 			if err != nil {
+				logger.WithError(err).Debug("error creating bucket")
 				return fmt.Errorf("error creating bucket: %s", err)
 			}
 		}
+
 		return nil
 	})
 
@@ -91,6 +102,7 @@ func (b *Blocks) Configure(ctx context.Context, coins []string) (err error) {
 func (b *Blocks) IsCreated(ctx context.Context, coins []string) bool {
 	logger := log.WithFields(log.Fields{
 		"package": "datastore",
+		"backend": "boltdb",
 		"manager": "Blocks",
 		"method":  "IsCreated",
 	})
@@ -114,7 +126,19 @@ func (b *Blocks) LastID(ctx context.Context, coin string) string {
 
 // Close implements stater.Close.
 func (b *Blocks) Close() error {
-	return b.DB.Close()
+	logger := log.WithFields(log.Fields{
+		"package": "datastore",
+		"backend": "boltdb",
+		"manager": "Blocks",
+		"method":  "Close",
+	})
+
+	err := b.DB.Close()
+	if err != nil {
+		logger.WithError(err).Debug("error closing boltdb")
+	}
+
+	return err
 }
 
 // List enables filtering for blocks in the datastore.
@@ -126,6 +150,13 @@ func (b *Blocks) List(ctx context.Context, coin string, query ListBlocksRequest)
 
 // Create creating a block in the datastore.
 func (b *Blocks) Create(ctx context.Context, coin string, newEntity *capi.Block) (block *capi.Block, err error) {
+	logger := log.WithFields(log.Fields{
+		"package": "datastore",
+		"backend": "boltdb",
+		"manager": "Blocks",
+		"method":  "Create",
+	})
+
 	bucket := b.storm.From(coin)
 
 	if newEntity.ID == "" {
@@ -134,6 +165,7 @@ func (b *Blocks) Create(ctx context.Context, coin string, newEntity *capi.Block)
 
 	err = bucket.Save(newEntity)
 	if err != nil {
+		logger.WithError(err).Debug("error creating block")
 		return block, err
 	}
 
@@ -142,8 +174,16 @@ func (b *Blocks) Create(ctx context.Context, coin string, newEntity *capi.Block)
 
 // CreateBulk enables bulk creation of blocks in the datastore.
 func (b *Blocks) CreateBulk(ctx context.Context, coin string, newEntities []*capi.Block) (blocks []*capi.Block, err error) {
+	logger := log.WithFields(log.Fields{
+		"package": "datastore",
+		"backend": "boltdb",
+		"manager": "Blocks",
+		"method":  "CreateBulk",
+	})
+
 	bucket, err := b.storm.From(coin).WithBatch(true).Begin(true)
 	if err != nil {
+		logger.WithError(err).Debug("error beginning storm transaction")
 		return
 	}
 	defer bucket.Rollback()
@@ -155,6 +195,7 @@ func (b *Blocks) CreateBulk(ctx context.Context, coin string, newEntities []*cap
 
 		err = bucket.Save(block)
 		if err != nil {
+			logger.WithError(err).Debug("error saving block")
 			return nil, err
 		}
 
@@ -163,6 +204,7 @@ func (b *Blocks) CreateBulk(ctx context.Context, coin string, newEntities []*cap
 
 	err = bucket.Commit()
 	if err != nil {
+		logger.WithError(err).Debug("error committing block transactions")
 		return nil, err
 	}
 
@@ -171,6 +213,13 @@ func (b *Blocks) CreateBulk(ctx context.Context, coin string, newEntities []*cap
 
 // Get enables retrieving a block given an ID.
 func (b *Blocks) Get(ctx context.Context, coin string, id string) (block *capi.Block, err error) {
+	logger := log.WithFields(log.Fields{
+		"package": "datastore",
+		"backend": "boltdb",
+		"manager": "Blocks",
+		"method":  "Get",
+	})
+
 	bucket := b.storm.From(coin)
 
 	block = &capi.Block{}
@@ -178,10 +227,11 @@ func (b *Blocks) Get(ctx context.Context, coin string, id string) (block *capi.B
 	if err != nil {
 		switch err {
 		case storm.ErrNotFound:
+			logger.WithError(err).Debug()
 			return nil, ErrNotFound
 
 		default:
-			// TODO: debug logging for non-captured errors
+			logger.WithError(err).Debug("error getting block")
 			return nil, err
 		}
 	}
@@ -191,16 +241,24 @@ func (b *Blocks) Get(ctx context.Context, coin string, id string) (block *capi.B
 
 // Update enables updating a block resource in the datastore.
 func (b *Blocks) Update(ctx context.Context, coin string, id string, updatedEntity *capi.Block) (block *capi.Block, err error) {
+	logger := log.WithFields(log.Fields{
+		"package": "datastore",
+		"backend": "boltdb",
+		"manager": "Blocks",
+		"method":  "Update",
+	})
+
 	bucket := b.storm.From(coin)
 
 	err = bucket.Update(updatedEntity)
 	if err != nil {
 		switch err {
 		case storm.ErrNotFound:
+			logger.WithError(err).Debug()
 			return nil, ErrNotFound
 
 		default:
-			// TODO: debug logging for non-captured errors
+			logger.WithError(err).Debug("error updating block")
 			return nil, err
 		}
 	}
@@ -210,6 +268,13 @@ func (b *Blocks) Update(ctx context.Context, coin string, id string, updatedEnti
 
 // Delete removes a block from the datastore.
 func (b *Blocks) Delete(ctx context.Context, coin string, id string) (err error) {
+	logger := log.WithFields(log.Fields{
+		"package": "datastore",
+		"backend": "boltdb",
+		"manager": "Blocks",
+		"method":  "Delete",
+	})
+
 	bucket := b.storm.From(coin)
 
 	block := &capi.Block{ID: id}
@@ -217,10 +282,11 @@ func (b *Blocks) Delete(ctx context.Context, coin string, id string) (err error)
 	if err != nil {
 		switch err {
 		case storm.ErrNotFound:
+			logger.WithError(err).Debug()
 			return ErrNotFound
 
 		default:
-			// TODO: debug logging for non-captured errors
+			logger.WithError(err).Debug("error deleting block")
 			return err
 		}
 	}
