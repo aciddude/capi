@@ -20,6 +20,8 @@ type BlockManager interface {
 // BlockManager enables datastore implementers to filter for, create, update
 // and delete blockchain block resources for multiple coins.
 type BlockStorer interface {
+	// Last returns the last known block stored of the provided coin.
+	Last(ctx context.Context, coin string) (*capi.Block, error)
 	// List enables filtering for blocks in the datastore.
 	List(ctx context.Context, coin string, query ListBlocksRequest) ([]*capi.Block, error)
 	// Create creating a block in the datastore.
@@ -28,6 +30,8 @@ type BlockStorer interface {
 	CreateBulk(ctx context.Context, coin string, query []*capi.Block) ([]*capi.Block, error)
 	// Get enables retrieving a block given an ID.
 	Get(ctx context.Context, coin string, id string) (block *capi.Block, err error)
+	// GetByHash enables retrieving a block given a block Hash.
+	GetByHash(ctx context.Context, coin string, hash string) (block *capi.Block, err error)
 	// Update enables updating a block resource in the datastore.
 	Update(ctx context.Context, coin string, id string, updatedEntity *capi.Block) (*capi.Block, error)
 	// Delete removes a block from the datastore.
