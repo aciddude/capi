@@ -109,13 +109,6 @@ func (b *Transactions) IsCreated(ctx context.Context, coins []string) bool {
 	return ok
 }
 
-// LastID returns the last known ID stored of the provided coin.
-func (b *Transactions) LastID(ctx context.Context, coin string) string {
-	// TODO: implement logic
-
-	return ""
-}
-
 // Close implements stater.Close.
 func (t *Transactions) Close() error {
 	return t.DB.Close()
