@@ -118,10 +118,28 @@ func (b *Blocks) IsCreated(ctx context.Context, coins []string) bool {
 }
 
 // LastID returns the last known ID stored of the provided coin.
-func (b *Blocks) LastID(ctx context.Context, coin string) string {
-	// TODO: implement logic
+func (b *Blocks) Last(ctx context.Context, coin string) (block *capi.Block, err error) {
+	logger := log.WithFields(log.Fields{
+		"package": "datastore",
+		"backend": "boltdb",
+		"manager": "Blocks",
+		"method":  "LastID",
+	})
 
-	return ""
+	bucket := b.storm.From(coin)
+
+	var blocks []*capi.Block
+	err = bucket.AllByIndex("Height", &blocks, storm.Limit(1), storm.Reverse())
+	if err != nil {
+		logger.WithError(err).Debug("error getting last block")
+		return nil, err
+	}
+
+	if len(blocks) > 0 {
+		block = blocks[0]
+	}
+
+	return
 }
 
 // Close implements stater.Close.
@@ -224,6 +242,34 @@ func (b *Blocks) Get(ctx context.Context, coin string, id string) (block *capi.B
 
 	block = &capi.Block{}
 	err = bucket.One("ID", id, block)
+	if err != nil {
+		switch err {
+		case storm.ErrNotFound:
+			logger.WithError(err).Debug()
+			return nil, ErrNotFound
+
+		default:
+			logger.WithError(err).Debug("error getting block")
+			return nil, err
+		}
+	}
+
+	return
+}
+
+// GetByHash enables retrieving a block given a block hash.
+func (b *Blocks) GetByHash(ctx context.Context, coin string, hash string) (block *capi.Block, err error) {
+	logger := log.WithFields(log.Fields{
+		"package": "datastore",
+		"backend": "boltdb",
+		"manager": "Blocks",
+		"method":  "GetByHash",
+	})
+
+	bucket := b.storm.From(coin)
+
+	block = &capi.Block{}
+	err = bucket.One("Hash", hash, block)
 	if err != nil {
 		switch err {
 		case storm.ErrNotFound:
