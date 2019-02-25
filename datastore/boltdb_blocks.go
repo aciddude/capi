@@ -131,8 +131,14 @@ func (b *Blocks) Last(ctx context.Context, coin string) (block *capi.Block, err 
 	var blocks []*capi.Block
 	err = bucket.AllByIndex("Height", &blocks, storm.Limit(1), storm.Reverse())
 	if err != nil {
-		logger.WithError(err).Debug("error getting last block")
-		return nil, err
+		switch err {
+		case storm.ErrNotFound:
+			return nil, ErrNotFound
+
+		default:
+			logger.WithError(err).Debug("error getting last block")
+			return nil, err
+		}
 	}
 
 	if len(blocks) > 0 {
