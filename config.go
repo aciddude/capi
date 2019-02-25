@@ -16,99 +16,142 @@ import (
 type datastore string
 
 const (
+	// BoltDB codifies the value to specify to use boltdb as a datastore.
 	BoltDB datastore = "boltdb"
 )
 
 // Config provides the domain structure to enable configuring CAPI.
 type Config struct {
 	// Port configures the API port CAPI will serve from.
-	Port string
+	Port uint16 `yaml:"port"`
 
 	// Coin Configuration.
-	Coins []Coin
+	Coins []Coin `yaml:"coins"`
 
 	// Datastore configuration.
-	Datastore Datastore
+	Datastore Datastore `yaml:"datastore"`
 }
 
 // Coin provides the configuration required to connect to a coin daemon API.
 type Coin struct {
 	// Name is the human readable name of the coin. For example, "Feathercoin".
-	Name string
+	Name string `yaml:"name"`
+
 	// Code is the 3 letter coin code. For example, "FTC".
-	Code string
+	Code string `yaml:"code"`
+
 	// Host is the Coin's API daemon hostname on which to connect to the API.
-	Host string
+	Host string `yaml:"host"`
+
 	// Port is the Coin's API daemon port on which to connect to the API.
-	Port string
+	Port uint16 `yaml:"port"`
+
 	// Username is the username to use in order to authenticate to the Coin's
 	// API daemon.
-	Username string
+	Username string `yaml:"username"`
+
 	// Password is the password to use in order to authenticate to the Coin's
 	// API daemon.
-	Password string
+	Password string `yaml:"password"`
+
 	// Timeout is how long to wait before timing out API requests.
-	Timeout int
+	Timeout int `yaml:"timeout"`
+
 	// SSL is whether to connect over SSL.
 	// If not specified, the default is false.
-	SSL bool
+	SSL bool `yaml:"ssl"`
+
 	// EnableCoinCodexAPI is whether to enable the coin's codex API.
 	// If not specified, the default is false.
 	EnableCoinCodexAPI bool `yaml:"enableCoinCodexAPI"`
 }
 
+// Datastore provides customization for backend datastores.
 type Datastore struct {
 	// Backend is the specific datastore driver to use.
-	Backend datastore
+	Backend datastore `yaml:"backend"`
 
 	// BoltDB specific datastore configuration.
-	BoltDB ConfigBoltDB `yaml:"boltDB"`
+	BoltDB ConfigBoltDB `yaml:"boltdb"`
 }
 
 // ConfigBoltDB provides specific configuration customisation for BoltDB.
 type ConfigBoltDB struct {
-	// How long to wait before timing out a query.
-	Timeout int
+	// DbPath enables storing data files at a path other than where the binary
+	// is started from.
+	DbPath string `yaml:"dbPath"`
+
+	// Timeout specifies, in seconds, how long to wait before timing out when
+	// trying to gain a file lock on the database's BoltDB data file.
+	Timeout int `yaml:"timeout"`
 }
 
 // NewConfig returns a processed config object.
-func NewConfig(path string) (*Config, error) {
+func NewConfig(configFilepath string) (*Config, error) {
 	logger := log.WithFields(log.Fields{
 		"package":  "capi",
 		"function": "NewConfig",
 	})
 
-	if path == "" {
+	if configFilepath == "" {
 		return nil, errors.New("filepath is required to open config")
 	}
 
-	f, err := ioutil.ReadFile(path)
+	rawConfigFile, err := ioutil.ReadFile(configFilepath)
 	if err != nil {
-		logger.WithError(err).Debug("no path provided")
+		logger.WithError(err).Debug("filepath not provided")
 		return nil, err
 	}
 
 	config := &Config{}
 	switch {
-	case strings.Contains(path, ".yaml"):
-		err := yaml.Unmarshal(f, config)
+	case strings.Contains(configFilepath, ".yaml"):
+		err := yaml.Unmarshal(rawConfigFile, config)
 		if err != nil {
 			logger.WithError(err).Debug("error unmarshaling yaml config")
 			return nil, err
 		}
 
-	case strings.Contains(path, ".json"):
-		err := json.Unmarshal(f, config)
+	case strings.Contains(configFilepath, ".json"):
+		err := json.Unmarshal(rawConfigFile, config)
 		if err != nil {
 			logger.WithError(err).Debug("error unmarshaling json config")
 			return nil, err
 		}
 
 	default:
-		err := errors.New(fmt.Sprintf("'%s' contains an unprocessible config filetype", path))
+		err := errors.New(fmt.Sprintf("'%s' contains an unprocessible config filetype", configFilepath))
 		logger.WithError(err).Debug("no filetype found")
 		return nil, err
 	}
 
+	configureDefaults(config)
 	return config, nil
+}
+
+// configureDefaults ensures proper defaults are set.
+func configureDefaults(config *Config) {
+	if config.Port == 0 {
+		config.Port = 8080
+	}
+
+	for i := range config.Coins {
+		config.Coins[i].Code = strings.ToLower(config.Coins[i].Code)
+	}
+
+	switch config.Datastore.Backend {
+	case BoltDB:
+		configureBoltdbDefaults(&config.Datastore.BoltDB)
+	}
+}
+
+// configureBoltdbDefaults ensures proper defaults are set for using boltdb.
+func configureBoltdbDefaults(config *ConfigBoltDB) {
+	if config.DbPath == "" {
+		config.DbPath = "."
+	}
+
+	if config.Timeout == 0 {
+		config.Timeout = 10
+	}
 }

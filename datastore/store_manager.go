@@ -34,8 +34,6 @@ type Configurer interface {
 type Stater interface {
 	// IsCreated returns a bool to trigger crea
 	IsCreated(ctx context.Context, coins []string) bool
-	// LastID returns the last known ID stored of the provided coin.
-	LastID(ctx context.Context, coin string) string
 	// Close enables datastore connections to be closed.
 	Close() error
 }

@@ -2,6 +2,7 @@ package datastore
 
 import (
 	// Standard Library Imports
+	"os"
 	"time"
 
 	// External Imports
@@ -11,15 +12,15 @@ import (
 	"github.com/aciddude/capi"
 )
 
+const (
+	boltdbPathBlocks       = "capi_blocks.db"
+	boltdbPathTransactions = "capi_transactions.db"
+)
+
 // NewBoltDB returns a new BoltDB backed datastore.
 func NewBoltDB(config *capi.Config) (*Datastore, error) {
 	boltOptions := &bolt.Options{
 		Timeout: time.Second * time.Duration(config.Datastore.BoltDB.Timeout),
-	}
-
-	blocksDb, err := bolt.Open("blocks.db", 0666, boltOptions)
-	if err != nil {
-		return nil, err
 	}
 
 	// Get a listing of each coin in order to create boltDB .
@@ -40,19 +41,27 @@ func NewBoltDB(config *capi.Config) (*Datastore, error) {
 		}
 	}
 
+	// Ensure DB path exists, if not, create the path.
+	ok, _ := fileExists(config.Datastore.BoltDB.DbPath)
+	if !ok {
+		err := os.MkdirAll(config.Datastore.BoltDB.DbPath, os.ModePerm)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	blocks := &Blocks{
-		DB:      blocksDb,
+		DBPath: config.Datastore.BoltDB.DbPath,
+
+		DB:      nil,
 		Coins:   coins,
 		Options: boltOptions,
 	}
 
-	transactionsDb, err := bolt.Open("transactions.db", 0666, boltOptions)
-	if err != nil {
-		return nil, err
-	}
-
 	transactions := &Transactions{
-		DB:      transactionsDb,
+		DBPath: config.Datastore.BoltDB.DbPath,
+
+		DB:      nil,
 		Coins:   coins,
 		Options: boltOptions,
 	}

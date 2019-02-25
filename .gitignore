@@ -1,0 +1,9 @@
+# IDEs
+.idea
+
+# Folders
+
+# Files
+capi.exe
+capi-beta.exe
+*.db
