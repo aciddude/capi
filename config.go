@@ -135,6 +135,10 @@ func configureDefaults(config *Config) {
 		config.Port = 8080
 	}
 
+	for i := range config.Coins {
+		config.Coins[i].Code = strings.ToLower(config.Coins[i].Code)
+	}
+
 	switch config.Datastore.Backend {
 	case BoltDB:
 		configureBoltdbDefaults(&config.Datastore.BoltDB)
